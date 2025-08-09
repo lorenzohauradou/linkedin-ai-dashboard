@@ -55,14 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const refreshUser = async () => {
         try {
-            // Se non c'è alcun token, consideriamo l'utente non autenticato
-            const hasToken = !!getAuthToken()
-            if (!hasToken) {
-                setUser(null)
-                setIsLoading(false)
-                return
-            }
-            const response = await fetch('/api/auth/me', { credentials: 'include' })
+            // Chiamiamo sempre l'API - i cookie httpOnly vengono inviati automaticamente
+            const response = await fetch('/api/auth/me', {
+                credentials: 'include' // Include cookies in request
+            })
 
             if (response.ok) {
                 const userData = await response.json()

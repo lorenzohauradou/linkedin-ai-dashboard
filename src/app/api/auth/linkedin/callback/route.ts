@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         })
 
         const data = await response.json()
+        console.log('Backend callback response:', { status: response.status, data })
 
         if (response.ok && data.success && data.token) {
             // Create response with redirect to dashboard
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
-                maxAge: data.token.expires_in,
+                maxAge: 86400, // 24 hours
                 path: '/'
             })
 
@@ -52,9 +53,11 @@ export async function GET(request: NextRequest) {
             redirectResponse.cookies.set('user_info', JSON.stringify(data.token.user), {
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
-                maxAge: data.token.expires_in,
+                maxAge: 86400, // 24 hours
                 path: '/'
             })
+
+            console.log('Cookies set successfully, redirecting to dashboard')
 
             return redirectResponse
         } else {

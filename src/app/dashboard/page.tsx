@@ -6,7 +6,7 @@ import { LinkedInDashboard } from "../../components/dashboard/linkedin-dashboard
 import { useAuth } from "../../contexts/auth-context"
 
 export default function DashboardPage() {
-    const { isAuthenticated, isLoading } = useAuth()
+    const { isAuthenticated, isLoading, user } = useAuth()
     const router = useRouter()
 
     useEffect(() => {

@@ -12,7 +12,7 @@ import {
   SidebarGroupLabel,
   SidebarFooter
 } from "../ui/sidebar"
-import { PenTool, Brain, FileText, Users, Settings, Linkedin } from 'lucide-react'
+import { PenTool, Brain, FileText, Users, Settings } from 'lucide-react'
 import Image from "next/image"
 
 const navigationItems = [
