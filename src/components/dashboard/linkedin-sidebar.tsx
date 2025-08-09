@@ -43,31 +43,34 @@ const toolsItems = [
 
 export function LinkedInSidebar() {
   return (
-    <Sidebar className="border-r border-gray-200 bg-white">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded flex items-center justify-center">
-            <Image src="/icons/logoicon.png" alt="LinkedIn AI Agent" width={64} height={64} />
+    <Sidebar variant="floating" className="">
+      <SidebarHeader className="p-6 border-b border-gray-100/50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
+            <Image src="/icons/logoicon.png" alt="LinkedIn AI Agent" width={28} height={28} />
           </div>
-          <span className="font-semibold text-gray-900">Vibe Scaling App</span>
+          <div>
+            <h1 className="font-bold text-gray-900 text-lg">Vibe Scaling</h1>
+            <p className="text-xs text-gray-500">AI Agent</p>
+          </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+          <SidebarGroupLabel className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-3 py-3 mb-2">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     isActive={item.isActive}
-                    className="text-gray-700 hover:bg-blue-50 hover:text-blue-700 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-700 data-[active=true]:font-medium"
+                    className="text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:text-blue-700 data-[active=true]:bg-gradient-to-r data-[active=true]:from-blue-500 data-[active=true]:to-blue-600 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-lg rounded-xl transition-all duration-200 py-3 px-4"
                   >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.title}</span>
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -75,20 +78,20 @@ export function LinkedInSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3 py-2">
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-3 py-3 mb-2">
             Tools
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {toolsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     isActive={item.isActive}
-                    className="text-gray-700 hover:bg-blue-50 hover:text-blue-700 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-700 data-[active=true]:font-medium"
+                    className="text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:text-blue-700 data-[active=true]:bg-gradient-to-r data-[active=true]:from-blue-500 data-[active=true]:to-blue-600 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-lg rounded-xl transition-all duration-200 py-3 px-4"
                   >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.title}</span>
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium">{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -97,12 +100,12 @@ export function LinkedInSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 border-t border-gray-100/50 mt-auto">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="text-gray-700 hover:bg-gray-50">
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
+            <SidebarMenuButton className="text-gray-600 hover:bg-gray-50 hover:text-gray-700 rounded-xl transition-all duration-200 py-3 px-4">
+              <Settings className="w-5 h-5" />
+              <span className="font-medium">Settings</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

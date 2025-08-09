@@ -7,12 +7,12 @@ import { Heart, Send, MoreHorizontal, ThumbsUp } from 'lucide-react'
 
 export function PostPreview() {
   return (
-    <Card className="bg-white border border-gray-200 rounded-lg shadow-sm max-w-none">
-      <CardContent className="p-0">
+    <Card className="relative bg-transparent border border-gray-200 rounded-lg shadow-sm max-w-none overflow-hidden">
+      <CardContent className="relative z-10 bg-white/80 backdrop-blur-sm p-0">
         <div className="flex items-start justify-between p-6 pb-4">
           <div className="flex items-start gap-3">
             <Avatar className="w-14 h-14">
-              <AvatarImage src="/placeholder.svg?height=56&width=56" alt="Lorenzo Hauradou" />
+              <AvatarImage src="/placeholder.svg?height=56&width=56" alt="Linkedin User Image" />
               <AvatarFallback className="bg-blue-100 text-blue-700 font-medium text-lg">LH</AvatarFallback>
             </Avatar>
             <div className="flex-1">

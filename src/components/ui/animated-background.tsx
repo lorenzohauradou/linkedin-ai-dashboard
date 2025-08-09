@@ -88,7 +88,7 @@ export default function AnimatedBackground() {
     }, [])
 
     return (
-        <div className="fixed inset-0 bg-white" style={{ zIndex: 0 }}>
+        <div className="absolute inset-0 bg-white overflow-hidden rounded-lg z-0">
             <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />
         </div>
     )
