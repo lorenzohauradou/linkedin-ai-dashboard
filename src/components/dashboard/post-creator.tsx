@@ -27,8 +27,8 @@ export function PostCreator() {
       </div>
       <div className="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 p-8 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Send className="w-10 h-10 text-white" />
+          <div className="w-20 h-20 bg-transparent backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Send className="w-10 h-10 text-blue-500" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-3">Start a conversation</h3>
           <p className="text-sm text-gray-600 max-w-xs leading-relaxed">
