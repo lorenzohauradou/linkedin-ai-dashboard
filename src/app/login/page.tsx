@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { LinkedInButton } from "../../components/ui/linkedin-button"
 import Image from "next/image"
 import { useIsMobile } from "../../hooks/use-mobile"
 import { useAuth } from "../../contexts/auth-context"
 
-export default function LoginPage() {
+function LoginContent() {
     const isMobile = useIsMobile()
     const { isAuthenticated, isLoading } = useAuth()
     const router = useRouter()
@@ -119,5 +119,17 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     )
 }
