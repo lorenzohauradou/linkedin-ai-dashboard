@@ -87,14 +87,14 @@ export function Features() {
                             </span>
                         </h2>
                         <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
-                            Activate Agent Mode for hands-free content creation. Your AI proactively
+                            Activate the Agent Vibe Mode for hands-free content creation. Your AI proactively
                             drafts high-quality posts based on industry trends and your expertise
                         </p>
                         <a
                             href="#demo"
                             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-lg group transition-colors"
                         >
-                            See Agent Mode in action
+                            See Agent Vibe Mode in action
                             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </a>
                     </div>
