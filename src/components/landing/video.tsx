@@ -8,11 +8,11 @@ export function Video() {
     const [isPlaying, setIsPlaying] = useState(false)
 
     return (
-        <section className="pb-8">
+        <section className="py-0 -mt-16 lg:mt-0 lg:pb-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Video container */}
-                <div className="relative max-w-4xl mx-auto">
-                    <div className="bg-gray-900 rounded-3xl p-8 relative overflow-hidden">
+                <div className="relative max-w-6xl lg:max-w-4xl mx-auto">
+                    <div className="bg-gray-900 rounded-3xl p-4 lg:p-8 relative overflow-hidden">
                         {/* Mock video interface */}
                         <div className="bg-gray-800 rounded-2xl relative aspect-video">
                             {/* Video overlay with mockup content */}
@@ -96,9 +96,9 @@ export function Video() {
                     </div>
 
                     {/* Watch SuperX in Action label */}
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                        <div className="bg-gray-900/80 text-white px-4 py-2 rounded-full text-sm flex items-center gap-2">
-                            <span>Watch LinkedIn AI in Action</span>
+                    <div className="absolute bottom-2 lg:bottom-4 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-gray-900/80 text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm flex items-center gap-2">
+                            <span>Watch Vibe Scaling in Action</span>
                             <span>↓</span>
                         </div>
                     </div>

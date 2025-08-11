@@ -13,8 +13,16 @@ export default function AnimatedBackground() {
         if (!ctx) return
 
         const resizeCanvas = () => {
-            canvas.width = window.innerWidth
-            canvas.height = document.documentElement.scrollHeight
+            const devicePixelRatio = window.devicePixelRatio || 1
+            const rect = canvas.getBoundingClientRect()
+
+            canvas.width = Math.max(window.innerWidth, document.documentElement.scrollWidth) * devicePixelRatio
+            canvas.height = Math.max(window.innerHeight, document.documentElement.scrollHeight) * devicePixelRatio
+
+            canvas.style.width = Math.max(window.innerWidth, document.documentElement.scrollWidth) + 'px'
+            canvas.style.height = Math.max(window.innerHeight, document.documentElement.scrollHeight) + 'px'
+
+            ctx.scale(devicePixelRatio, devicePixelRatio)
         }
 
         resizeCanvas()
@@ -24,8 +32,11 @@ export default function AnimatedBackground() {
         const dots: { x: number; y: number; opacity: number; fadeDirection: number; pulseSpeed: number }[] = []
 
         // Create grid of dots that covers the entire document
-        for (let x = 0; x <= canvas.width + gridSize; x += gridSize) {
-            for (let y = 0; y <= canvas.height + gridSize; y += gridSize) {
+        const canvasDisplayWidth = Math.max(window.innerWidth, document.documentElement.scrollWidth)
+        const canvasDisplayHeight = Math.max(window.innerHeight, document.documentElement.scrollHeight)
+
+        for (let x = 0; x <= canvasDisplayWidth + gridSize; x += gridSize) {
+            for (let y = 0; y <= canvasDisplayHeight + gridSize; y += gridSize) {
                 dots.push({
                     x,
                     y,
@@ -46,18 +57,18 @@ export default function AnimatedBackground() {
             ctx.lineWidth = 1
 
             // Vertical lines
-            for (let x = 0; x <= canvas.width; x += gridSize) {
+            for (let x = 0; x <= canvasDisplayWidth; x += gridSize) {
                 ctx.beginPath()
                 ctx.moveTo(x, 0)
-                ctx.lineTo(x, canvas.height)
+                ctx.lineTo(x, canvasDisplayHeight)
                 ctx.stroke()
             }
 
             // Horizontal lines
-            for (let y = 0; y <= canvas.height; y += gridSize) {
+            for (let y = 0; y <= canvasDisplayHeight; y += gridSize) {
                 ctx.beginPath()
                 ctx.moveTo(0, y)
-                ctx.lineTo(canvas.width, y)
+                ctx.lineTo(canvasDisplayWidth, y)
                 ctx.stroke()
             }
 
@@ -88,7 +99,7 @@ export default function AnimatedBackground() {
     }, [])
 
     return (
-        <div className="absolute inset-0 bg-white overflow-hidden rounded-lg z-0">
+        <div className="fixed inset-0 bg-white overflow-hidden z-0">
             <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />
         </div>
     )

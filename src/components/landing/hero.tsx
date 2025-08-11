@@ -50,57 +50,69 @@ const trustedBy = [
 export function Hero() {
     const isMobile = useIsMobile()
     return (
-        <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32">
+        <section className="relative min-h-[80vh] lg:min-h-screen flex items-center justify-center">
+
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-8">
-                        <div className="space-y-6">
-                            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight text-gray-900 leading-[1.05]">
-                                <span className="inline-block">Boost your</span>
-                                <span className="inline-flex items-center gap-2 sm:gap-3 mt-2 sm:mt-3">
-                                    <svg className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0A66C2" />
-                                    </svg>
-                                    <AnimatedText />
-                                </span>
-                            </h1>
+                    {/* Content Section */}
+                    <div className="relative z-10 text-center lg:text-left">
+                        <div className="space-y-6 lg:space-y-8">
+                            {/* Main heading */}
+                            <div className="space-y-4 lg:space-y-6">
+                                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-[1.1]">
+                                    <span className="block">Boost your</span>
+                                    <span className="flex items-center justify-center lg:justify-start gap-3">
+                                        <svg className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0A66C2" />
+                                        </svg>
+                                        <AnimatedText />
+                                    </span>
+                                </h1>
 
-                            <p className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed sm:leading-8 max-w-xl mt-6">
-                                Kill the writer's block with the AI agent that learns your voice to boost your presence on LinkedIn and make you show up everyday
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <Button
-                                size="lg"
-                                className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 px-7 sm:px-9 py-3.5 text-base sm:text-lg font-semibold rounded-full transition-all duration-200 hover:scale-105 shadow-xl shadow-blue-500/30 border border-white/30 backdrop-blur-sm hover:border-white/50 hover:shadow-blue-500/40"
-                            >
-                                {isMobile ? "Claim Your AI Agent" : "Start Free Trial"}
-                                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 animate-pulse-slow" />
-                            </Button>
-                        </div>
-
-                        <div className="flex items-center gap-4 pt-4">
-                            <div className="flex -space-x-2">
-                                {trustedBy.map((item, index) => (
-                                    <Avatar key={index} className="w-10 h-10 border-2 border-white">
-                                        <AvatarImage src={item.image} />
-                                        <AvatarFallback className="bg-blue-100 text-blue-700 text-sm">U{index}</AvatarFallback>
-                                    </Avatar>
-                                ))}
+                                <p className="text-base sm:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                                    Kill the writer's block with the AI agent that learns your voice to boost your presence on LinkedIn and make you show up everyday
+                                </p>
                             </div>
-                            <div className="flex items-center gap-1">
-                                <div className="flex">
-                                    {[1, 2, 3, 4, 5].map((i) => (
-                                        <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                    ))}
+
+                            {/* CTA Button */}
+                            <div className="pt-2 lg:pt-4">
+                                <Button
+                                    size="lg"
+                                    className="bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 px-8 sm:px-12 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-full transition-all duration-200 hover:scale-105 shadow-xl shadow-blue-500/30 border border-white/30 backdrop-blur-sm hover:border-white/50 hover:shadow-blue-500/40"
+                                >
+                                    {isMobile ? "Claim Your AI Agent" : "Start for free"}
+                                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
+                                </Button>
+                            </div>
+
+                            {/* Trust indicators */}
+                            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 pt-4 lg:pt-6">
+
+                                <div className="flex items-center gap-4">
+                                    <div className="flex -space-x-2">
+                                        {trustedBy.map((item, index) => (
+                                            <Avatar key={index} className="w-8 h-8 border-2 border-white">
+                                                <AvatarImage src={item.image} />
+                                                <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">U{index}</AvatarFallback>
+                                            </Avatar>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className="flex">
+                                            {[1, 2, 3, 4, 5].map((i) => (
+                                                <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                            ))}
+                                        </div>
+                                        <span className="text-sm text-gray-600 ml-1">+2,500 users</span>
+                                    </div>
                                 </div>
-                                <span className="text-sm text-gray-600 ml-2">Trusted by 2,500+ professionals</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="relative max-w-lg mx-auto lg:max-w-none">
+                    {/* Post Mockup - Hidden on mobile */}
+                    <div className="hidden lg:block relative max-w-lg mx-auto lg:max-w-none">
                         <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 sm:p-4 transform rotate-1 hover:rotate-0 transition-transform duration-300">
                             <div className="flex items-center gap-2 sm:gap-3 pb-3">
                                 <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
