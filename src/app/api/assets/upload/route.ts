@@ -15,48 +15,50 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const body = await request.json()
-        const { selectedText, enhanceType, customInstruction, selectedBrains } = body
-
-        // Prepara i dati per il backend
-        const enhanceData = {
-            selected_text: selectedText,
-            enhance_type: enhanceType, // 'short', 'long', 'custom', 'carousel'
-            custom_instruction: customInstruction,
-            brain_ids: selectedBrains,
-            mode: 'enhance'
+        // Ottieni il FormData dalla richiesta
+        const formData = await request.formData()
+        const file = formData.get('file') as File
+        
+        if (!file) {
+            return NextResponse.json(
+                { error: 'No file provided' },
+                { status: 400 }
+            )
         }
 
+        console.log('📤 Frontend: Upload file to backend:', file.name, file.size, 'bytes')
+
+        // Crea un nuovo FormData per il backend
+        const backendFormData = new FormData()
+        backendFormData.append('file', file)
+
         // Forward the request to the backend
-        const response = await fetch(`${BACKEND_URL}/api/enhance-post`, {
+        const response = await fetch(`${BACKEND_URL}/api/assets/upload`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken.value}`,
-                'Content-Type': 'application/json'
+                // Non impostare Content-Type per FormData, il browser lo fa automaticamente
             },
-            body: JSON.stringify(enhanceData)
+            body: backendFormData
         })
 
         const data = await response.json()
 
+        console.log('✅ Backend response:', data)
+
         if (response.ok) {
             return NextResponse.json({
                 success: true,
-                enhanced_content: data.enhanced_content,
-                changes: data.changes || {
-                    added: [],
-                    removed: [],
-                    modified: []
-                }
+                asset_info: data.asset_info
             })
         } else {
             return NextResponse.json(
-                { error: 'Failed to enhance post' },
+                { error: 'Failed to upload asset' },
                 { status: response.status }
             )
         }
     } catch (error) {
-        console.error('Error enhancing post:', error)
+        console.error('❌ Error uploading asset:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

@@ -4,53 +4,24 @@ import { useState, useRef, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
 import { Card, CardContent } from "../ui/card"
-import { Badge } from "../ui/badge"
-import { Heart, Send, MoreHorizontal, ThumbsUp, Wand2, MessageSquare, RotateCcw, Copy, Layout, Sparkles } from 'lucide-react'
-
-interface VibeAction {
-  id: string
-  label: string
-  icon: React.ReactNode
-  description: string
-}
-
-const VIBE_ACTIONS: VibeAction[] = [
-  {
-    id: 'enhance-short',
-    label: 'Enhance Post (Short)',
-    icon: <Sparkles className="w-4 h-4" />,
-    description: 'Make it concise and punchy'
-  },
-  {
-    id: 'enhance-long',
-    label: 'Enhance Post (Long)',
-    icon: <Wand2 className="w-4 h-4" />,
-    description: 'Develop into detailed post'
-  },
-  {
-    id: 'custom',
-    label: 'Custom Instruction',
-    icon: <MessageSquare className="w-4 h-4" />,
-    description: 'Add specific changes'
-  },
-  {
-    id: 'carousel',
-    label: 'Create Carousel',
-    icon: <Layout className="w-4 h-4" />,
-    description: 'Turn into slide deck'
-  }
-]
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
+import { Heart, Send, MoreHorizontal, ThumbsUp, Wand2, MessageSquare, Sparkles, Edit } from 'lucide-react'
+import { useAuth } from "../../contexts/auth-context"
 
 interface PostPreviewProps {
   initialContent?: string
+  currentAsset?: File | null
+  currentAssetId?: string | null
 }
 
-export function PostPreview({ initialContent = "Write your brief idea here..." }: PostPreviewProps) {
+export function PostPreview({ initialContent = "Write your brief idea here...", currentAsset, currentAssetId }: PostPreviewProps) {
+  const { user } = useAuth()
   const [postContent, setPostContent] = useState(initialContent)
   const [isTextSelected, setIsTextSelected] = useState(false)
   const [selectedText, setSelectedText] = useState("")
   const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 })
   const [showVibeMenu, setShowVibeMenu] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [customInstruction, setCustomInstruction] = useState("")
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [isHighlighted, setIsHighlighted] = useState(false)
@@ -59,166 +30,179 @@ export function PostPreview({ initialContent = "Write your brief idea here..." }
     removed: [],
     modified: []
   })
+  const [assetPreview, setAssetPreview] = useState<string | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Aggiorna il contenuto quando cambia initialContent
+  // Helper per ottenere i dati dell'utente con fallback
+  const getUserDisplayName = () => {
+    if (!user) return "User"
+    return `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || "User"
+  }
+
+  const getUserInitials = () => {
+    if (!user) return "U"
+    const firstName = user.first_name || ""
+    const lastName = user.last_name || ""
+    if (firstName && lastName) {
+      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+    }
+    if (firstName) return firstName.charAt(0).toUpperCase()
+    if (user.email) return user.email.charAt(0).toUpperCase()
+    return "U"
+  }
+
+  const getUserProfileImage = () => {
+    return user?.profile_picture_url || "/icons/emoji1.png"
+  }
+
+  // Aggiorna il contenuto quando cambia initialContent (solo all'inizializzazione)
   useEffect(() => {
     if (initialContent && initialContent !== postContent) {
-      setPostContent(initialContent)
-      // Se è una nuova idea breve, evidenziala in giallo e apri il popup automaticamente
-      if (initialContent.length < 100 && initialContent !== "Write your brief idea here...") {
-        console.log("Setting highlighted and opening menu for:", initialContent)
-        setIsHighlighted(true)
-        setSelectedText(initialContent) // Imposta tutto il testo come selezionato
-        // Usa un timeout più lungo e forza l'apertura
-        setTimeout(() => {
-          console.log("Opening vibe menu")
-          setShowVibeMenu(true)
-        }, 100)
+      // Solo se non stiamo nel mezzo di un enhancement
+      if (!isHighlighted && changes.added.length === 0) {
+        setPostContent(initialContent)
       }
     }
-  }, [initialContent, postContent])
+  }, [initialContent])
+
+  // Gestisci asset preview
+  useEffect(() => {
+    if (currentAsset) {
+      if (currentAsset.type.startsWith('image/')) {
+        // Per le immagini usiamo FileReader
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setAssetPreview(e.target?.result as string)
+        }
+        reader.readAsDataURL(currentAsset)
+      } else if (currentAsset.type.startsWith('video/')) {
+        // Per i video usiamo createObjectURL (più efficiente per file grandi)
+        console.log('📹 Creating video preview for:', currentAsset.name, currentAsset.type, currentAsset.size, 'bytes')
+        const videoUrl = URL.createObjectURL(currentAsset)
+        console.log('📹 Video URL created:', videoUrl)
+        setAssetPreview(videoUrl)
+
+        // Cleanup quando il componente viene smontato
+        return () => {
+          URL.revokeObjectURL(videoUrl)
+        }
+      } else {
+        setAssetPreview(null)
+      }
+    } else {
+      setAssetPreview(null)
+    }
+  }, [currentAsset])
+
+  // Auto-resize textarea quando cambia il contenuto
+  useEffect(() => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current
+      textarea.style.height = 'auto'
+      textarea.style.height = Math.max(60, textarea.scrollHeight) + 'px'
+    }
+  }, [postContent])
 
   const handleTextSelection = () => {
     const textarea = textareaRef.current
     if (!textarea) return
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-
-    if (start !== end) {
+    // Delay per assicurarsi che la selezione sia completata
+    setTimeout(() => {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
       const selected = textarea.value.substring(start, end).trim()
-      if (selected.length > 0) {
-        console.log("Manual text selection:", selected)
+
+      // Solo se c'è una selezione di almeno 1 caratteri (rimosso il limite del testo completo)
+      if (selected.length >= 1) {
         setSelectedText(selected)
-        setIsHighlighted(true) // Evidenzia il testo selezionato
-        setShowVibeMenu(true) // Apri il menu per la selezione manuale
-
-        // Reset dei changes precedenti
+        setIsHighlighted(true)
+        setShowVibeMenu(true)
         setChanges({ added: [], removed: [], modified: [] })
-      }
-    } else {
-      // Se non c'è selezione, chiudi tutto
-      if (showVibeMenu) {
-        setShowVibeMenu(false)
-        setIsHighlighted(false)
-        setSelectedText("")
-      }
-    }
-  }
-
-  const handleVibeAction = async (actionId: string) => {
-    if (actionId === 'custom') {
-      setShowCustomInput(true)
-      setShowVibeMenu(false)
-    } else {
-      setIsHighlighted(true)
-      setShowVibeMenu(false)
-
-      try {
-        const response = await fetch('/api/enhance-post', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            selectedText,
-            enhanceType: actionId.replace('enhance-', ''), // 'short' o 'long'
-            selectedBrains: [] // TODO: passare i cervelli selezionati
-          })
-        })
-
-        const data = await response.json()
-
-        if (data.success) {
-          setChanges(data.changes)
-          // Aggiorna il contenuto con quello enhanced
-          // setPostContent(data.enhanced_content) // Se necessario
-        } else {
-          console.error('Failed to enhance:', data.error)
-          // Fallback alla logica mock
-          setChanges({
-            added: ['AI-enhanced content (fallback)'],
-            removed: ['original rough text'],
-            modified: ['improved version']
-          })
+        console.log("✅ Text selected:", selected)
+      } else if (selected.length === 0) {
+        // Solo se non c'è selezione - chiudi popup
+        if (showVibeMenu) {
+          setShowVibeMenu(false)
+          setIsHighlighted(false)
+          setSelectedText("")
+          console.log("❌ Selection cleared")
         }
-      } catch (error) {
-        console.error('Error calling enhance API:', error)
-        // Fallback alla logica mock
-        setChanges({
-          added: ['AI-enhanced content (fallback)'],
-          removed: ['original rough text'],
-          modified: ['improved version']
-        })
       }
-    }
-  }
 
-  const handleCustomInstruction = async () => {
-    if (!customInstruction.trim()) return
-
-    setIsHighlighted(true)
-    setShowCustomInput(false)
-
-    try {
-      const response = await fetch('/api/enhance-post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          selectedText,
-          enhanceType: 'custom',
-          customInstruction,
-          selectedBrains: [] // TODO: passare i cervelli selezionati
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setChanges(data.changes)
-      } else {
-        console.error('Failed to apply custom instruction:', data.error)
-        // Fallback
-        setChanges({
-          added: [`Modified with: ${customInstruction}`],
-          removed: [],
-          modified: [selectedText]
-        })
-      }
-    } catch (error) {
-      console.error('Error calling custom instruction API:', error)
-      // Fallback
-      setChanges({
-        added: [`Modified with: ${customInstruction}`],
-        removed: [],
-        modified: [selectedText]
-      })
-    }
+    }, 50)
   }
 
   const acceptChanges = () => {
-    // Applica i cambiamenti al postContent solo ora
+    // Applica i cambiamenti al postContent
     if (changes.removed.length > 0 && changes.added.length > 0) {
-      const updatedContent = postContent.replace(changes.removed[0], changes.added[0])
+      const removedText = changes.removed[0]
+      const addedText = changes.added[0]
+
+      // Normalizza i testi rimuovendo spazi extra e newline
+      const normalizedRemovedText = removedText.trim()
+      const normalizedContent = postContent.trim()
+
+      console.log("🔍 Debug accept changes:", {
+        removedText,
+        addedText,
+        normalizedRemovedText,
+        currentContent: postContent,
+        normalizedContent,
+        removedTextFound: normalizedContent.includes(normalizedRemovedText)
+      })
+
+      // Approccio più robusto: trova e sostituisci il testo
+      let updatedContent = postContent
+
+      // Prova prima con il testo normalizzato
+      if (postContent.includes(normalizedRemovedText)) {
+        updatedContent = postContent.replace(normalizedRemovedText, addedText)
+        console.log("🔥 Using normalized text replacement")
+      }
+      // Prova con il testo originale (con newline)
+      else if (postContent.includes(removedText)) {
+        updatedContent = postContent.replace(removedText, addedText)
+        console.log("🔥 Using original text replacement")
+      }
+      // Ultimo tentativo: sostituisci tutto il contenuto se è molto simile
+      else if (normalizedContent === normalizedRemovedText) {
+        updatedContent = addedText
+        console.log("🔥 Full content replacement")
+      } else {
+        console.log("❌ No replacement method worked")
+      }
+
+      console.log("🔄 Content update:", {
+        before: postContent,
+        after: updatedContent,
+        changed: postContent !== updatedContent
+      })
+
       setPostContent(updatedContent)
+    } else {
+      console.log("❌ No changes to apply:", { changes })
     }
 
+    // Reset completo dello stato
     setIsHighlighted(false)
     setChanges({ added: [], removed: [], modified: [] })
-    setSelectedText("") // Reset della selezione
+    setSelectedText("")
+    setShowVibeMenu(false)
+    setShowCustomInput(false)
+    setCustomInstruction("")
+
+    console.log("✅ Changes accepted and state reset")
   }
 
-  const handleSelectionEnhancement = async (enhanceType: string) => {
+  const enhanceSelection = async (enhanceType: string, customInstruction: string = "") => {
     if (!selectedText) return
 
     setShowVibeMenu(false)
 
     try {
-      console.log('Enhancing selection:', { selectedText, enhanceType, fullText: postContent })
+      console.log('🚀 Enhancing selection:', { selectedText, enhanceType, customInstruction })
 
       const response = await fetch('/api/enhance-selection', {
         method: 'POST',
@@ -226,45 +210,110 @@ export function PostPreview({ initialContent = "Write your brief idea here..." }
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          selectedText: selectedText,
+          selectedText,
           fullText: postContent,
-          enhanceType: enhanceType
+          enhanceType,
+          customInstruction
         })
       })
 
       const data = await response.json()
 
-      if (data.success) {
+      if (data.success && data.enhanced_text) {
+        console.log('✅ Enhancement successful:', {
+          original: selectedText,
+          enhanced: data.enhanced_text,
+          originalInContent: postContent.includes(selectedText)
+        })
 
+        // Imposta i cambiamenti per la preview - usa il testo normalizzato
+        const normalizedSelectedText = selectedText.trim()
         setChanges({
           added: [data.enhanced_text],
-          removed: [data.original_text],
+          removed: [normalizedSelectedText], // Usa il testo normalizzato
           modified: []
         })
+
+        console.log('🎯 Changes set:', {
+          added: [data.enhanced_text],
+          removed: [normalizedSelectedText],
+          originalSelected: selectedText
+        })
       } else {
-        console.error('Enhancement failed:', data.error)
-        // Fallback con enhancement locale
-        const enhanced = selectedText + ` (${enhanceType})`
+        console.error('❌ Enhancement failed:', data.error)
+        // Fallback semplice
+        const normalizedSelectedText = selectedText.trim()
         setChanges({
-          added: [enhanced],
-          removed: [selectedText],
+          added: [`${normalizedSelectedText} (enhanced)`],
+          removed: [normalizedSelectedText],
           modified: []
         })
       }
     } catch (error) {
-      console.error('Error enhancing selection:', error)
-      // Fallback con enhancement locale
-      const enhanced = selectedText + ` (${enhanceType})`
+      console.error('❌ Error enhancing selection:', error)
+      // Fallback semplice
+      const normalizedSelectedText = selectedText.trim()
       setChanges({
-        added: [enhanced],
-        removed: [selectedText],
+        added: [`${normalizedSelectedText} (enhanced)`],
+        removed: [normalizedSelectedText],
         modified: []
       })
     }
+
+    // Reset input personalizzato
+    if (customInstruction) {
+      setCustomInstruction("")
+    }
   }
 
-  const handlePublish = () => {
-    console.log("Publish post")
+  const handlePublish = async () => {
+    try {
+      console.log("📤 Publishing post to LinkedIn...")
+      console.log("📝 Content:", postContent)
+      console.log("🖼️ Asset ID:", currentAssetId)
+
+      // Prepara FormData per l'invio
+      const formData = new FormData()
+      formData.append('post_content', postContent)
+      formData.append('post_type', 'post')
+
+      if (currentAssetId) {
+        formData.append('asset_id', currentAssetId)
+      }
+
+      const response = await fetch('/api/publish-post', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log("✅ Post published successfully:", result)
+        alert("Post pubblicato con successo su LinkedIn!")
+      } else {
+        const error = await response.json()
+        console.error("❌ Publish failed:", error)
+        alert(`Errore pubblicazione: ${error.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error("❌ Publish error:", error)
+      alert(`Errore pubblicazione: ${error}`)
+    }
+  }
+
+  const handleEditPost = () => {
+    setIsEditMode(true)
+    // Seleziona tutto il testo
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.select()
+        textareaRef.current.focus()
+        // Imposta anche il selectedText per attivare il menu
+        setSelectedText(postContent)
+        setIsTextSelected(true)
+        setShowVibeMenu(true)
+      }
+    }, 100)
   }
 
   const renderChangesView = () => {
@@ -277,13 +326,13 @@ export function PostPreview({ initialContent = "Write your brief idea here..." }
       // Usa sempre il postContent originale per mostrare i changes
       const displayText = postContent
 
-      // Se c'è una sostituzione, mostra il testo originale con evidenziazione
+      // Se c'è una sostituzione, mostra il testo con evidenziazione inline
       if (changes.removed.length > 0 && changes.added.length > 0) {
         const removedText = changes.removed[0]
         const addedText = changes.added[0]
 
-        // Trova la posizione del testo rimosso nel contenuto originale
-        const parts = displayText.split(removedText)
+        // Sostituisci SOLO la prima occorrenza per evitare duplicazioni
+        const parts = displayText.split(removedText, 2)
 
         return (
           <div className="text-base leading-relaxed">
@@ -321,7 +370,7 @@ export function PostPreview({ initialContent = "Write your brief idea here..." }
 
     return (
       <div className="space-y-3">
-        <div className="min-h-[120px] p-2">
+        <div className="min-h-[60px] p-2">
           {renderTextWithChanges()}
         </div>
 
@@ -341,191 +390,207 @@ export function PostPreview({ initialContent = "Write your brief idea here..." }
   }
 
   return (
-    <Card className="relative bg-transparent border border-gray-200 rounded-lg shadow-sm max-w-none overflow-hidden">
-      <CardContent className="relative z-10 bg-white/80 backdrop-blur-sm p-0">
-        <div className="flex items-start justify-between p-6 pb-4">
-          <div className="flex items-start gap-3">
-            <Avatar className="w-14 h-14">
-              <AvatarImage src="/icons/emoji1.png" alt="Linkedin User Image" />
-              <AvatarFallback className="bg-blue-100 text-blue-700 font-medium text-lg">LH</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-gray-900 text-base">LORENZO</h3>
-                <svg className="w-4 h-4 text-blue-600" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 0L10.2 5.8H16L11.6 9.4L13.8 15.2L8 11.6L2.2 15.2L4.4 9.4L0 5.8H5.8L8 0Z" />
-                </svg>
-                <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                <span className="text-blue-600 text-sm font-medium">1st</span>
+    <>
+      <Card className="relative bg-transparent border border-gray-200 rounded-lg shadow-sm max-w-none">
+        <CardContent className="relative z-10 bg-white/80 backdrop-blur-sm p-0">
+          <div className="flex items-start justify-between p-6 pb-4">
+            <div className="flex items-start gap-3">
+              <Avatar className="w-14 h-14">
+                <AvatarImage src={getUserProfileImage()} alt="LinkedIn User Image" />
+                <AvatarFallback className="bg-blue-100 text-blue-700 font-medium text-lg">{getUserInitials()}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900 text-base">{getUserDisplayName()}</h3>
+                  <svg className="w-4 h-4 text-blue-600" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0L10.2 5.8H16L11.6 9.4L13.8 15.2L8 11.6L2.2 15.2L4.4 9.4L0 5.8H5.8L8 0Z" />
+                  </svg>
+                  <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
+                  <span className="text-blue-600 text-sm font-medium">1st</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-0.5">{user?.headline || "LinkedIn Professional"}</p>
+                <p className="text-sm text-gray-500 mt-0.5">now</p>
               </div>
-              <p className="text-sm text-gray-600 mt-0.5">Bali, Indonesia</p>
-              <p className="text-sm text-gray-500 mt-0.5">now</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleEditPost}
+                      className="h-8 px-3 py-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 flex items-center gap-1.5"
+                    >
+                      <Edit className="w-4 h-4" />
+                      <span className="text-sm font-medium">Edit Post</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <div className="text-sm">
+                      <p className="font-medium">💡 Pro Tip</p>
+                      <p className="text-gray-400">
+                        Click to select the entire post, or highlight specific parts you want to modify
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-100 p-2">
+                <MoreHorizontal className="w-5 h-5" />
+              </Button>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-100 p-2">
-            <MoreHorizontal className="w-5 h-5" />
-          </Button>
-        </div>
 
-        <div className="px-6 pb-4 relative">
-          <div className="relative">
-            {/* Mostro sempre il textarea, ma gestisco l'evidenziazione diversamente */}
-            {(changes.added.length > 0 || changes.removed.length > 0) ? (
-              // Mostra i cambiamenti AI
-              <div className="min-h-[120px] text-base text-gray-900 leading-relaxed p-2">
-                {renderChangesView()}
-              </div>
-            ) : isHighlighted && selectedText === postContent ? (
-              // Evidenziazione completa per idee iniziali brevi
-              <div className="min-h-[120px] text-base text-gray-900 leading-relaxed p-3 relative">
-                <div className="relative inline-block">
-                  <span
-                    className="relative bg-gradient-to-r from-yellow-300 to-yellow-200 bg-opacity-50 px-1 py-0.5 text-gray-900 font-medium rounded-sm"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(253, 224, 71, 0.4) 0%, rgba(254, 240, 138, 0.4) 100%)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}
-                  >
-                    {postContent}
-                  </span>
+          <div className="px-6 pb-4 relative">
+            <div className="relative">
+              {(changes.added.length > 0 || changes.removed.length > 0) ? (
+                // Mostra i cambiamenti AI con diff
+                <div className="min-h-[60px] text-base text-gray-900 leading-relaxed p-3">
+                  {renderChangesView()}
                 </div>
-              </div>
-            ) : (
-              // Textarea normale con possibile evidenziazione parziale 
-              <div className="relative">
+              ) : (
                 <textarea
                   ref={textareaRef}
-                  className="w-full min-h-[120px] text-base text-gray-900 leading-relaxed resize-none bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-gray-500"
-                  placeholder="Write your brief idea here..."
+                  className="w-full min-h-[60px] text-base text-gray-900 leading-relaxed resize-none bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-gray-500"
+                  placeholder={currentAsset ? "Add a description for your media..." : "Write your brief idea here..."}
                   value={postContent}
                   onChange={(e) => {
                     setPostContent(e.target.value)
+                    // Reset height to auto to get the natural height
                     e.target.style.height = 'auto'
-                    e.target.style.height = e.target.scrollHeight + 'px'
+                    // Set height to scrollHeight to expand as needed
+                    e.target.style.height = Math.max(60, e.target.scrollHeight) + 'px'
                   }}
-                  onSelect={handleTextSelection}
                   onMouseUp={handleTextSelection}
-                  rows={5}
-                  style={{ height: 'auto' }}
+                  onKeyUp={handleTextSelection}
+                  onSelect={handleTextSelection}
+                  rows={3}
+                  style={{
+                    height: 'auto',
+                    minHeight: '60px',
+                    maxHeight: 'none',
+                    background: isHighlighted && selectedText && selectedText !== postContent.trim()
+                      ? 'linear-gradient(90deg, rgba(253, 224, 71, 0.2) 0%, rgba(254, 240, 138, 0.2) 100%)'
+                      : 'transparent'
+                  }}
                 />
+              )}
 
-                {/* Overlay per evidenziazione parziale se necessario */}
-                {isHighlighted && selectedText !== postContent && selectedText && (
-                  <div className="absolute inset-0 pointer-events-none p-3">
-                    <div className="text-base leading-relaxed whitespace-pre-wrap">
-                      {postContent.split(selectedText).map((part, index, array) => (
-                        index < array.length - 1 ? (
-                          <span key={index}>
-                            {part}
-                            <span
-                              className="bg-gradient-to-r from-yellow-300 to-yellow-200 bg-opacity-50 px-1 py-0.5 rounded-sm"
-                              style={{
-                                background: 'linear-gradient(90deg, rgba(253, 224, 71, 0.4) 0%, rgba(254, 240, 138, 0.4) 100%)',
-                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                              }}
-                            >
-                              {selectedText}
-                            </span>
-                          </span>
-                        ) : <span key={index}>{part}</span>
-                      ))}
+              {assetPreview && (
+                <div className="mt-4">
+                  <div className="relative rounded-lg overflow-hidden border border-gray-200">
+                    {currentAsset?.type.startsWith('video/') ? (
+                      <video
+                        src={assetPreview}
+                        className="w-full h-auto max-h-96 object-cover"
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={assetPreview}
+                        alt="Asset preview"
+                        className="w-full h-auto max-h-96 object-cover"
+                      />
+                    )}
+                    <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                      {currentAsset?.type.startsWith('video/') ? 'Video' : 'Image'}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+
+
+
+            {/* Custom Instruction Input */}
+            {showCustomInput && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Custom Instruction</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCustomInput(false)}
+                      className="h-8 w-8 p-0"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-4">
+                    Tell AI how to modify: <span className="font-medium">"{selectedText.substring(0, 50)}..."</span>
+                  </p>
+
+                  <textarea
+                    value={customInstruction}
+                    onChange={(e) => setCustomInstruction(e.target.value)}
+                    placeholder="e.g., Add a call to action, Make it more personal, Add statistics..."
+                    className="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={4}
+                    autoFocus
+                  />
+
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      size="sm"
+                      onClick={() => enhanceSelection('custom', customInstruction)}
+                      disabled={!customInstruction.trim()}
+                      className="flex-1"
+                    >
+                      <Wand2 className="w-3 h-3 mr-1" />
+                      Apply Enhancement
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCustomInput(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
-
-
-          {/* Custom Instruction Input */}
-          {showCustomInput && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-              <div className="bg-white border border-gray-200 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Custom Instruction</h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCustomInput(false)}
-                    className="h-8 w-8 p-0"
-                  >
-                    ✕
-                  </Button>
+          <div className="px-6 py-3 border-t border-gray-100">
+            <div className="flex items-center justify-between text-sm text-gray-500">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-1">
+                  <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                    <ThumbsUp className="w-3 h-3 text-white" />
+                  </div>
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white">
+                    <Heart className="w-3 h-3 text-white" />
+                  </div>
+                  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white">
+                    <span className="text-white text-xs font-bold">👏</span>
+                  </div>
                 </div>
-
-                <p className="text-sm text-gray-600 mb-4">
-                  Tell AI how to modify: <span className="font-medium">"{selectedText.substring(0, 50)}..."</span>
-                </p>
-
-                <textarea
-                  value={customInstruction}
-                  onChange={(e) => setCustomInstruction(e.target.value)}
-                  placeholder="e.g., Add a call to action, Make it more personal, Add statistics..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={4}
-                  autoFocus
-                />
-
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    size="sm"
-                    onClick={handleCustomInstruction}
-                    disabled={!customInstruction.trim()}
-                    className="flex-1"
-                  >
-                    <Wand2 className="w-3 h-3 mr-1" />
-                    Apply Enhancement
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowCustomInput(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <span className="hover:text-blue-600 hover:underline cursor-pointer">393</span>
               </div>
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-3 border-t border-gray-100">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-1">
-                <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
-                  <ThumbsUp className="w-3 h-3 text-white" />
-                </div>
-                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white">
-                  <Heart className="w-3 h-3 text-white" />
-                </div>
-                <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white">
-                  <span className="text-white text-xs font-bold">👏</span>
-                </div>
+              <div className="flex items-center gap-4">
+                <span className="hover:text-blue-600 hover:underline cursor-pointer">59 comments</span>
               </div>
-              <span className="hover:text-blue-600 hover:underline cursor-pointer">393</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="hover:text-blue-600 hover:underline cursor-pointer">59 comments</span>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-around py-2 border-t border-gray-100">
-          <Button variant="ghost" size="lg" className="flex-1 text-gray-600 hover:bg-gradient-to-r hover:from-blue-400 hover:to-blue-600 hover:text-white hover:shadow-lg hover:scale-90 py-4 rounded-xl max-w-md transition-all duration-300" onClick={handlePublish}>
-            <Send className="w-5 h-5 mr-2" />
-            <span className="text-base font-medium">Publish Post</span>
-          </Button>
-        </div>
-      </CardContent>
+          <div className="flex items-center justify-around py-2 border-t border-gray-100">
+            <Button variant="ghost" size="lg" className="flex-1 text-gray-600 hover:bg-gradient-to-r hover:from-blue-400 hover:to-blue-600 hover:text-white hover:shadow-lg hover:scale-90 py-4 rounded-xl max-w-md transition-all duration-300" onClick={handlePublish}>
+              <Send className="w-5 h-5 mr-2" />
+              <span className="text-base font-medium">Publish Post</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Vibe Menu Popup - Sotto la preview come SuperX */}
       {showVibeMenu && (
         <>
-          {/* Overlay per chiudere cliccando fuori */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/10"
             onClick={() => {
               setShowVibeMenu(false)
               setIsHighlighted(false) // Rimuovi anche evidenziazione
@@ -534,86 +599,105 @@ export function PostPreview({ initialContent = "Write your brief idea here..." }
             }}
           />
 
-          {/* Popup menu stile SuperX */}
-          <div className="absolute top-full mt-3 left-4 right-4 z-50">
-            <div className="bg-gray-900 text-white rounded-lg shadow-2xl p-4 border border-gray-700">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Wand2 className="w-4 h-4 text-blue-400" />
-                  <h3 className="text-sm font-medium text-white">turn this into a</h3>
-                </div>
+          <div className="fixed top-[40%] left-1/2 transform -translate-x-1/2 z-[9999] w-72">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-gray-900">
+              <div className="flex items-center justify-between mb-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setShowVibeMenu(false)
                     setIsHighlighted(false)
+                    setSelectedText("")
                   }}
-                  className="h-6 w-6 p-0 text-gray-400 hover:text-white hover:bg-gray-800"
+                  className="h-6 w-6 p-0 absolute top-1 right-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
                 >
                   ✕
                 </Button>
               </div>
 
-              {/* Due colonne di azioni stile SuperX */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => handleVibeAction('enhance-short')}
-                    className="flex items-center gap-2 p-3 text-sm text-left bg-gray-800 hover:bg-blue-600 rounded-md transition-colors"
+                    onClick={() => enhanceSelection('professional')}
+                    className="flex items-center gap-2 p-3 text-xs text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span className="font-medium">An engaging hook</span>
+                    <MessageSquare className="w-3 h-3 text-gray-600" />
+                    <span className="font-medium text-gray-700">Improve grammar</span>
                   </button>
                   <button
-                    onClick={() => handleVibeAction('enhance-long')}
-                    className="flex items-center gap-2 p-3 text-sm text-left bg-gray-800 hover:bg-blue-600 rounded-md transition-colors"
+                    onClick={() => enhanceSelection('engaging')}
+                    className="flex items-center gap-2 p-3 text-xs text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                   >
-                    <MessageSquare className="w-4 h-4" />
-                    <span className="font-medium">More details</span>
+                    <Sparkles className="w-3 h-3 text-gray-600" />
+                    <span className="font-medium text-gray-700">Translate to English</span>
                   </button>
                 </div>
-
-                <div className="text-xs text-gray-400 px-1 py-1">Make it more</div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleSelectionEnhancement('engaging')}
-                    className="flex items-center gap-2 p-3 text-sm text-left bg-gray-800 hover:bg-green-600 rounded-md transition-colors"
-                  >
-                    <Wand2 className="w-4 h-4" />
-                    <span className="font-medium">Engaging</span>
-                  </button>
-                  <button
-                    onClick={() => handleSelectionEnhancement('professional')}
-                    className="flex items-center gap-2 p-3 text-sm text-left bg-gray-800 hover:bg-purple-600 rounded-md transition-colors"
-                  >
-                    <Layout className="w-4 h-4" />
-                    <span className="font-medium">Professional</span>
-                  </button>
+                <div>
+                  <div className="text-xs text-gray-500 font-medium px-1 mb-2">Make it more</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => enhanceSelection('engaging')}
+                      className="flex items-center gap-2 p-3 text-xs text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                    >
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      <span className="font-medium text-gray-700">Engaging</span>
+                    </button>
+                    <button
+                      onClick={() => enhanceSelection('sarcastic')}
+                      className="flex items-center gap-2 p-3 text-xs text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                    >
+                      <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                      <span className="font-medium text-gray-700">Humorous</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <button
+                      onClick={() => enhanceSelection('creative')}
+                      className="flex items-center gap-2 p-3 text-xs text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                    >
+                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                      <span className="font-medium text-gray-700">Creative</span>
+                    </button>
+                    <button
+                      onClick={() => enhanceSelection('sarcastic')}
+                      className="flex items-center gap-2 p-3 text-xs text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                    >
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      <span className="font-medium text-gray-700">Sarcastic</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleSelectionEnhancement('creative')}
-                    className="flex items-center gap-2 p-3 text-sm text-left bg-gray-800 hover:bg-orange-600 rounded-md transition-colors"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span className="font-medium">Creative</span>
-                  </button>
-                  <button
-                    onClick={() => handleSelectionEnhancement('sarcastic')}
-                    className="flex items-center gap-2 p-3 text-sm text-left bg-gray-800 hover:bg-red-600 rounded-md transition-colors"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span className="font-medium">Sarcastic</span>
-                  </button>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Give me instructions..."
+                      className="w-full bg-gray-50 min-h-[60px] text-gray-900 placeholder-gray-500 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                      value={customInstruction}
+                      onChange={(e) => setCustomInstruction(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && customInstruction.trim()) {
+                          enhanceSelection('custom', customInstruction)
+                        }
+                      }}
+                    />
+                    {customInstruction.trim() && (
+                      <button
+                        onClick={() => enhanceSelection('custom', customInstruction)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-300 transition-colors"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </>
       )}
-    </Card>
+    </>
   )
 }

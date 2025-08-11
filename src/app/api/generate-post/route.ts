@@ -15,16 +15,29 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Get form data from request
-        const formData = await request.formData()
+        const body = await request.json()
+        const { content, contentType, selectedBrains, contentUrl, assetId } = body
 
-        // Forward the request to the backend
+        console.log('🔍 Next.js API generate-post ricevuto:', { content, contentType, selectedBrains, contentUrl, assetId })
+
+        // Prepara i dati per il backend
+        const generateData = {
+            content: content,
+            content_type: contentType,
+            content_url: contentUrl,
+            brain_ids: selectedBrains,
+            assetId: assetId
+        }
+
+        console.log('Dati inviati al backend generate-post:', generateData)
+
         const response = await fetch(`${BACKEND_URL}/api/generate-post`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken.value}`,
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken.value}`
             },
-            body: formData
+            body: JSON.stringify(generateData)
         })
 
         const data = await response.json()
@@ -38,7 +51,7 @@ export async function POST(request: NextRequest) {
             )
         }
     } catch (error) {
-        console.error('Error generating post:', error)
+        console.error('Error in generate-post API:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

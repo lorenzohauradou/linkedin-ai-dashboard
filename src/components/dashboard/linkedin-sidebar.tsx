@@ -12,18 +12,13 @@ import {
   SidebarGroupLabel,
   SidebarFooter
 } from "../ui/sidebar"
-import { PenTool, Brain, FileText, Users, Settings } from 'lucide-react'
+import { PenTool, Brain, FileText, Settings } from 'lucide-react'
 import Image from "next/image"
 
 const navigationItems = [
   {
     title: "Post Generator",
     icon: PenTool,
-    isActive: false
-  },
-  {
-    title: "Content Brain",
-    icon: Brain,
     isActive: false
   },
   {
@@ -35,10 +30,10 @@ const navigationItems = [
 
 const toolsItems = [
   {
-    title: "Profile Analyzer",
-    icon: Users,
+    title: "Content Brain",
+    icon: Brain,
     isActive: false
-  }
+  },
 ]
 
 export function LinkedInSidebar() {

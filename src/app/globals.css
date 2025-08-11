@@ -172,3 +172,25 @@
   animation: gradient-shift 8s ease infinite;
   background-size: 200% 200%;
 }
+
+/* Custom text selection highlighting - giallo per evidenziazione */
+::selection {
+  background-color: rgba(253, 224, 71, 0.6); /* Giallo LinkedIn */
+  color: rgba(0, 0, 0, 0.87);
+}
+
+::-moz-selection {
+  background-color: rgba(253, 224, 71, 0.6); /* Giallo LinkedIn */
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* Specificatamente per le textarea */
+textarea::selection {
+  background-color: rgba(253, 224, 71, 0.6); /* Giallo LinkedIn */
+  color: rgba(0, 0, 0, 0.87);
+}
+
+textarea::-moz-selection {
+  background-color: rgba(253, 224, 71, 0.6); /* Giallo LinkedIn */
+  color: rgba(0, 0, 0, 0.87);
+}
