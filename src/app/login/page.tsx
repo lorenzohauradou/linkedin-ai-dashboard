@@ -62,7 +62,7 @@ function LoginContent() {
                             />
                         </div>
                         <span className="text-2xl font-bold text-gray-900">
-                            Vibe Scaling
+                            Vibe Scaling App
                         </span>
                     </div>
 
@@ -73,8 +73,8 @@ function LoginContent() {
                             </h1>
                             <p className="text-gray-600">
                                 {isMobile
-                                    ? "Login to start scaling your personal brand"
-                                    : "Login with your LinkedIn account to start scaling your personal brand on LinkedIn"}
+                                    ? "Login to start scaling your brand"
+                                    : "Login with your LinkedIn account to start scaling your brand on LinkedIn"}
                             </p>
                         </div>
 
@@ -101,7 +101,7 @@ function LoginContent() {
                     </div>
 
                     <div className="text-center space-y-4 pt-8">
-                        <p className="text-sm text-gray-600">Used by over 2,500+ professionals</p>
+                        <p className="text-sm text-gray-600">Used by over 100+ professionals</p>
                         <div className="flex justify-center gap-6">
                             {[1, 2, 3, 4].map((i) => (
                                 <div key={i} className="w-8 h-8 sm:w-10 sm:h-10">

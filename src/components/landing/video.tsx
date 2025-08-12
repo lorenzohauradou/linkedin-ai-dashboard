@@ -8,18 +8,13 @@ export function Video() {
     const [isPlaying, setIsPlaying] = useState(false)
 
     return (
-        <section className="py-0 -mt-16 lg:mt-0 lg:pb-8">
+        <section className="py-0 -mt-16 lg:-mt-32 lg:pb-24">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Video container */}
                 <div className="relative max-w-6xl lg:max-w-4xl mx-auto">
                     <div className="bg-gray-900 rounded-3xl p-4 lg:p-8 relative overflow-hidden">
-                        {/* Mock video interface */}
                         <div className="bg-gray-800 rounded-2xl relative aspect-video">
-                            {/* Video overlay with mockup content */}
                             <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center">
-                                {/* Mock LinkedIn dashboard */}
                                 <div className="w-full h-full p-4 relative">
-                                    {/* Left sidebar mockup */}
                                     <div className="absolute left-4 top-4 bottom-4 w-16 bg-gray-900 rounded-xl">
                                         <div className="p-2 space-y-2">
                                             <div className="w-3 h-3 bg-white rounded-full mx-auto"></div>
@@ -31,13 +26,10 @@ export function Video() {
                                         </div>
                                     </div>
 
-                                    {/* Main content area mockup */}
                                     <div className="ml-20 mr-4 mt-4 mb-4 bg-gray-700 rounded-xl p-4">
                                         <div className="space-y-4">
-                                            {/* Header */}
                                             <div className="text-white text-sm">ACTIVITY TIME / IMPRESSION</div>
 
-                                            {/* Chart area */}
                                             <div className="grid grid-cols-7 gap-1 h-24">
                                                 {Array.from({ length: 35 }).map((_, i) => {
                                                     const col = i % 7
@@ -49,7 +41,6 @@ export function Video() {
                                                 })}
                                             </div>
 
-                                            {/* Bottom stats */}
                                             <div className="flex justify-between text-xs text-gray-400">
                                                 <span>Sun</span>
                                                 <span>Mon</span>
@@ -62,7 +53,6 @@ export function Video() {
                                         </div>
                                     </div>
 
-                                    {/* Right panel mockup */}
                                     <div className="absolute right-4 top-4 bottom-4 w-48 bg-gray-700 rounded-xl p-4">
                                         <div className="space-y-3">
                                             <div className="text-white text-xs">HIGHLIGHTS</div>
@@ -82,7 +72,6 @@ export function Video() {
                                 </div>
                             </div>
 
-                            {/* Play button overlay */}
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <Button
                                     size="lg"
@@ -95,10 +84,9 @@ export function Video() {
                         </div>
                     </div>
 
-                    {/* Watch SuperX in Action label */}
                     <div className="absolute bottom-2 lg:bottom-4 left-1/2 transform -translate-x-1/2">
                         <div className="bg-gray-900/80 text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-full text-xs lg:text-sm flex items-center gap-2">
-                            <span>Watch Vibe Scaling in Action</span>
+                            <span>Watch Vibe Scaling App in Action</span>
                             <span>↓</span>
                         </div>
                     </div>

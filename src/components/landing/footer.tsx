@@ -18,7 +18,7 @@ export function Footer() {
                                     </span>
                                 </div>
                                 <p className="text-gray-500 text-sm leading-relaxed">
-                                    The LinkedIn AI Agent that helps you boost your personal brand presence
+                                    👉 The LinkedIn AI Agent that helps you boost your personal brand presence
                                 </p>
                             </div>
                         </div>
@@ -47,27 +47,6 @@ export function Footer() {
                                 </div>
 
                                 <div>
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Resources</h3>
-                                    <ul className="space-y-2">
-                                        <li>
-                                            <Link href="/blog" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
-                                                Blog
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link href="/docs" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
-                                                Documentation
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link href="/guides" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
-                                                Guides
-                                            </Link>
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <div>
                                     <h3 className="text-sm font-semibold text-gray-900 mb-3">Company</h3>
                                     <ul className="space-y-2">
                                         <li>
@@ -83,6 +62,27 @@ export function Footer() {
                                         <li>
                                             <Link href="/careers" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
                                                 Careers
+                                            </Link>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="hidden md:block">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Resources</h3>
+                                    <ul className="space-y-2">
+                                        <li>
+                                            <Link href="/blog" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
+                                                Blog
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link href="/docs" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
+                                                Documentation
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link href="/guides" className="text-gray-500 hover:text-blue-600 text-sm transition-colors">
+                                                Guides
                                             </Link>
                                         </li>
                                     </ul>

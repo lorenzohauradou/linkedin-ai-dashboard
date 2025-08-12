@@ -55,10 +55,8 @@ export function Hero() {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    {/* Content Section */}
                     <div className="relative z-10 text-center lg:text-left">
                         <div className="space-y-6 lg:space-y-8">
-                            {/* Main heading */}
                             <div className="space-y-4 lg:space-y-6">
                                 <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-[1.1]">
                                     <span className="block">Boost your</span>
@@ -75,7 +73,6 @@ export function Hero() {
                                 </p>
                             </div>
 
-                            {/* CTA Button */}
                             <div className="pt-2 lg:pt-4">
                                 <Button
                                     size="lg"
@@ -85,8 +82,6 @@ export function Hero() {
                                     <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
                                 </Button>
                             </div>
-
-                            {/* Trust indicators */}
                             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 pt-4 lg:pt-6">
 
                                 <div className="flex items-center gap-4">
@@ -104,14 +99,13 @@ export function Hero() {
                                                 <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                                             ))}
                                         </div>
-                                        <span className="text-sm text-gray-600 ml-1">+2,500 users</span>
+                                        <span className="text-sm text-gray-600 ml-1">+100 users</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Post Mockup - Hidden on mobile */}
                     <div className="hidden lg:block relative max-w-lg mx-auto lg:max-w-none">
                         <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 sm:p-4 transform rotate-1 hover:rotate-0 transition-transform duration-300">
                             <div className="flex items-center gap-2 sm:gap-3 pb-3">
