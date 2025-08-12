@@ -562,7 +562,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
                     <div className="text-sm">
                       <p className="font-medium">💡 Pro Tip</p>
                       <p className="text-gray-400">
-                        Click to select the entire post, or highlight specific parts you want to modify
+                        Highlight specific parts you want to modify or click to select the entire post
                       </p>
                     </div>
                   </TooltipContent>
