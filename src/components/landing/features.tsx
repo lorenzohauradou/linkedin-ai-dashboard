@@ -87,7 +87,7 @@ export function Features() {
                             </span>
                         </h2>
                         <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
-                            Activate the Agent Vibe Mode for hands-free content creation. Your AI proactively
+                            Activate the Agent "Vibe Mode" for hands-free content creation. Your AI proactively
                             drafts high-quality posts based on industry trends and your expertise
                         </p>
                         <a
