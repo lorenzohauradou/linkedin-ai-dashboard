@@ -169,7 +169,7 @@ export function Hero() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Eye className="w-3 h-3" />
-                                        <span>45 views</span>
+                                        <span>1.5k views</span>
                                     </div>
                                 </div>
 
