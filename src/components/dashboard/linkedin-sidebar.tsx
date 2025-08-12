@@ -30,7 +30,7 @@ const navigationItems = [
 
 const toolsItems = [
   {
-    title: "Content Brain",
+    title: "Content Brains",
     icon: Brain,
     isActive: false
   },

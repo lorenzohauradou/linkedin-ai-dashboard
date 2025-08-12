@@ -3,7 +3,11 @@
 import { ArrowRight } from 'lucide-react'
 import Image from "next/image"
 
-export function WelcomeMessage() {
+interface WelcomeMessageProps {
+    onCreatePost?: () => void
+}
+
+export function WelcomeMessage({ onCreatePost }: WelcomeMessageProps) {
     return (
         <div className="h-full flex items-center justify-center p-6">
             <div className="max-w-md w-full">
@@ -19,10 +23,17 @@ export function WelcomeMessage() {
                     </p>
                 </div>
                 <div className="text-center mt-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-100">
+                    <div className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-100">
                         <span>Start Vibe Scaling in the AI panel</span>
                         <ArrowRight className="w-4 h-4" />
                     </div>
+                    <button
+                        onClick={onCreatePost}
+                        className="md:hidden inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:from-blue-500 hover:to-blue-400 shadow-lg touch-manipulation transition-all duration-200"
+                    >
+                        <span>Start Vibe Scaling</span>
+                        <ArrowRight className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
         </div>

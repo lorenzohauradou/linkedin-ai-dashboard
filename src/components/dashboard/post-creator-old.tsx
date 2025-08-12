@@ -5,7 +5,7 @@ import { Button } from "../ui/button"
 import { Textarea } from "../ui/textarea"
 import { Badge } from "../ui/badge"
 import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, FileImage, ChevronDown } from 'lucide-react'
-import { TypewriterPlaceholder } from "../ui/typewriter-placeholder"
+
 
 interface Brain {
   id: string
@@ -34,6 +34,8 @@ interface PostCreatorProps {
   onGeneratingChange?: (generating: boolean) => void
   viewMode?: 'preview' | 'multi-angle' | 'welcome'
 }
+
+
 
 export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, viewMode }: PostCreatorProps) {
   const [message, setMessage] = useState("")
@@ -66,6 +68,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
       return () => document.removeEventListener('click', closeDropdown)
     }
   }, [showBrainsDropdown])
+
 
   // Reset espansione e selezione quando cambiano le opzioni
   useEffect(() => {
@@ -297,6 +300,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
       {/* Nascondi i comandi quando ci sono le preview, durante il loading, o quando siamo in modalità preview */}
       {postOptions.length === 0 && !isGenerating && viewMode !== 'preview' && (
         <>
+
           <div className="p-4 border-b border-gray-50">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
             <div className="space-y-2">
@@ -324,7 +328,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full h-10 text-xs justify-start hover:bg-gray-50 transition-colors touch-manipulation"
+                    className="w-full h-10 text-xs justify-start hover:bg-gray-50 transition-colors"
                     onClick={() => {
                       setActiveMode('link')
                       if (onInteraction) onInteraction()
@@ -360,7 +364,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-between h-10 text-xs touch-manipulation"
+                className="w-full justify-between h-10 text-xs"
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowBrainsDropdown(!showBrainsDropdown)
@@ -395,7 +399,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                           e.stopPropagation()
                           if (brain.id) toggleBrain(brain.id)
                         }}
-                        className={`w-full text-left px-3 py-3 md:py-2 text-xs hover:bg-gray-50 flex items-center gap-2 touch-manipulation ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2 ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                           }`}
                       >
                         <div className={`w-2 h-2 rounded-full ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-600' : 'bg-gray-300'
@@ -416,7 +420,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                     <Badge
                       key={brain.id || `selected-brain-${index}`}
                       variant="default"
-                      className="text-xs py-0.5 px-2 touch-manipulation"
+                      className="text-xs py-0.5 px-2"
                       onClick={() => {
                         if (brain.id) toggleBrain(brain.id)
                       }}
@@ -434,7 +438,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               <Button
                 variant={outputStyle === 'short' ? 'default' : 'outline'}
                 size="sm"
-                className="w-full justify-start h-10 text-xs touch-manipulation"
+                className="w-full justify-start h-10 text-xs"
                 onClick={() => setOutputStyle('short')}
               >
                 <Zap className="w-4 h-4 mr-2" />
@@ -443,7 +447,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               <Button
                 variant={outputStyle === 'structured' ? 'default' : 'outline'}
                 size="sm"
-                className="w-full justify-start h-10 text-xs touch-manipulation"
+                className="w-full justify-start h-10 text-xs"
                 onClick={() => setOutputStyle('structured')}
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -452,7 +456,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               <Button
                 variant={outputStyle === 'story' ? 'default' : 'outline'}
                 size="sm"
-                className="w-full justify-start h-10 text-xs touch-manipulation"
+                className="w-full justify-start h-10 text-xs"
                 onClick={() => setOutputStyle('story')}
               >
                 <MessageSquare className="w-4 h-4 mr-2" />
@@ -471,7 +475,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
             </div>
             {loadingStage === 'uploading' && (
               <>
-                <p className="text-gray-600 font-medium">Generating your Posts</p>
+                <p className="text-gray-600 font-medium">Uploading your content...</p>
                 <p className="text-sm text-gray-500 mt-1">Getting your media ready for AI magic</p>
               </>
             )}
@@ -494,14 +498,16 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
       <div className="flex-1 p-4 overflow-y-auto">
         {postOptions.length > 0 && !isGenerating ? (
           <div className="space-y-3">
+            {(() => { console.log('🎨 Rendering preview section, postOptions:', postOptions); return null })()}
 
+            {/* Bottone per tornare alla vista completa */}
             {usedPostId && (
               <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-700 font-medium">Post selected</span>
                   <button
                     onClick={() => setUsedPostId(null)}
-                    className="text-xs text-blue-600 hover:text-blue-800 underline touch-manipulation"
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
                   >
                     View all options
                   </button>
@@ -516,7 +522,10 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               .filter(option => usedPostId === null || option.id === usedPostId) // Mostra solo il post usato se selezionato
               .map((option, index) => {
                 const isSelected = selectedPostId === option.id
+
+
                 const styleInfo = getStyleInfo(option.style)
+
                 const isExpanded = expandedPostId === option.id
                 const processedContent = processPostContent(option.content)
 
@@ -525,7 +534,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                     {!isExpanded ? (
                       // Card compatta
                       <div
-                        className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-gray-300 hover:shadow-md transition-all duration-200 touch-manipulation"
+                        className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-gray-300 hover:shadow-md transition-all duration-200"
                         onClick={() => setExpandedPostId(option.id)}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -564,14 +573,14 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                             <div className="flex items-center gap-2 mt-2 ml-1">
                               <button
                                 onClick={() => handleUsePost(option)}
-                                className="bg-blue-500 text-white px-4 py-2 md:py-1.5 rounded-full text-xs font-medium hover:bg-blue-600 transition-colors touch-manipulation"
+                                className="bg-blue-500 text-white px-4 py-1.5 rounded-full text-xs font-medium hover:bg-blue-600 transition-colors"
                               >
                                 Use this post
                               </button>
                               {!usedPostId && (
                                 <button
                                   onClick={() => setExpandedPostId(null)}
-                                  className="p-2 md:p-1.5 rounded-full hover:bg-gray-200 transition-colors touch-manipulation"
+                                  className="p-1.5 rounded-full hover:bg-gray-200 transition-colors"
                                 >
                                   <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -594,9 +603,9 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                   <input
                     type="text"
                     placeholder="Give me instructions to improve this post..."
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-3 md:py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 touch-manipulation"
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                   />
-                  <button className="bg-blue-500 text-white p-3 md:p-2 rounded-full hover:bg-blue-600 transition-colors touch-manipulation">
+                  <button className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
@@ -625,57 +634,35 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
 
       {uploadedFile && (
         <div className="p-4 border-t border-gray-100 bg-gray-50">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            {/* Header con info file e bottone rimuovi */}
-            <div className="flex items-center justify-between p-3 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  {uploadedFile?.type.startsWith('video/') ? (
-                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  ) : (
-                    <Image className="w-4 h-4 text-blue-600" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
-                  <p className="text-xs text-gray-500">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={removeFile}
-                className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full touch-manipulation"
-              >
-                ✕
-              </Button>
-            </div>
-
-            {filePreview && (
-              <div className="relative">
-                {uploadedFile?.type.startsWith('video/') ? (
-                  <video
-                    src={filePreview}
-                    className="w-full h-auto max-h-64 object-cover"
-                    controls
-                    preload="metadata"
-                    muted
-                    playsInline
-                  />
-                ) : (
-                  <img
-                    src={filePreview}
-                    alt="Uploaded preview"
-                    className="w-full h-auto max-h-64 object-cover"
-                  />
-                )}
-                <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                  {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}
-                </div>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+            {filePreview ? (
+              uploadedFile?.type.startsWith('video/') ? (
+                <video
+                  src={filePreview}
+                  className="w-12 h-12 object-cover rounded"
+                  muted
+                  playsInline
+                />
+              ) : (
+                <img src={filePreview} alt="Preview" className="w-12 h-12 object-cover rounded" />
+              )
+            ) : (
+              <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                <FileImage className="w-6 h-6 text-gray-400" />
               </div>
             )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
+              <p className="text-xs text-gray-500">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={removeFile}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              ✕
+            </Button>
           </div>
         </div>
       )}
@@ -683,39 +670,19 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
       {!usedPostId && (
         <div className="p-4 bg-white border-t border-gray-100">
           <div className="space-y-3">
-            <div className="relative">
-              <Textarea
-                placeholder=""
-                value={message}
-                className="min-h-[80px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-base leading-relaxed touch-manipulation"
-                onChange={(e) => {
-                  setMessage(e.target.value)
-                  // Attiva l'interazione quando l'utente inizia a scrivere
-                  if (e.target.value.trim().length > 0 && onInteraction) {
-                    onInteraction()
-                  }
-                }}
-                rows={3}
-              />
-              {message.length === 0 && (
-                <div className="absolute inset-0 pointer-events-none p-3 text-gray-400">
-                  <TypewriterPlaceholder
-                    phrases={[
-                      "Share a breakthrough moment in your startup journey...",
-                      "Upload a screenshot of your MRR growth...",
-                      "Share insights about your tech stack...",
-                      "Tell us about a challenge you overcame...",
-                      "Share your thoughts on AI and entrepreneurship...",
-                      "Upload a video demo of your product...",
-                      "Share your team's success story...",
-                      "Post about your latest feature launch..."
-                    ]}
-                    typingSpeed={40}
-                    pauseDuration={3000}
-                  />
-                </div>
-              )}
-            </div>
+            <Textarea
+              placeholder={activeMode === 'text' ? "Write your brief Linkedin post idea here..." : activeMode === 'link' ? "Paste YouTube, Reddit, or article link..." : "Describe your media..."}
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value)
+                // Attiva l'interazione quando l'utente inizia a scrivere
+                if (e.target.value.trim().length > 0 && onInteraction) {
+                  onInteraction()
+                }
+              }}
+              className="min-h-[80px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-sm"
+              rows={3}
+            />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <input
@@ -732,13 +699,14 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                     fileInputRef.current?.click()
                     if (onInteraction) onInteraction()
                   }}
-                  className="h-10 w-10 md:h-8 md:w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md touch-manipulation"
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
                 >
-                  <Image className="w-5 h-5 md:w-4 md:h-4" />
+                  <Image className="w-4 h-4" />
                 </Button>
                 <span className="text-xs text-gray-400">{message.length}/2000</span>
               </div>
 
+              {/* Multiple Angles Checkbox */}
               <div className="flex items-center gap-2 mb-3">
                 <input
                   type="checkbox"
@@ -755,7 +723,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               <Button
                 size="sm"
                 onClick={handleSubmit}
-                className={`rounded-xl h-10 md:h-9 px-4 transition-all duration-200 touch-manipulation ${(message.trim() || uploadedFile)
+                className={`rounded-xl h-9 px-4 transition-all duration-200 ${(message.trim() || uploadedFile)
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
@@ -769,7 +737,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </div>
       )}
 
-      {/* Pannello per modalità preview */}
+      {/* Pannello semplificato per modalità preview */}
       {viewMode === 'preview' && (
         <div className="p-4">
         </div>
