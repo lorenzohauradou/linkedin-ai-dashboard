@@ -51,8 +51,8 @@ export function Features() {
                             <span className="text-gray-900">learns from the best</span>
                         </h2>
                         <p className="text-xl text-gray-600 leading-relaxed max-w-lg">
-                            Analyze top performers in your niche and learn what makes content engaging.
-                            Your AI adapts their winning strategies to your unique voice and expertise
+                            Power up your AI Brains with top performers content in your niche.
+                            The Agent will learn from them and create content that resonates with your audience.
                         </p>
                         <a
                             href="#demo"

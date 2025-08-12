@@ -46,7 +46,7 @@ export function LinkedInSidebar() {
           </div>
           <div>
             <h1 className="font-bold text-gray-900 text-lg">Vibe Scaling</h1>
-            <p className="text-xs text-gray-500">AI Agent</p>
+            <p className="text-xs text-gray-500">AI LinkedIn Agent</p>
           </div>
         </div>
       </SidebarHeader>

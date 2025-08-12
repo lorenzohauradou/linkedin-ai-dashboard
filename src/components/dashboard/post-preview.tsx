@@ -25,7 +25,13 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
   const [customInstruction, setCustomInstruction] = useState("")
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [isHighlighted, setIsHighlighted] = useState(false)
-  const [changes, setChanges] = useState<{ added: string[], removed: string[], modified: string[] }>({
+  const [changes, setChanges] = useState<{
+    wordDiff?: { type: 'unchanged' | 'removed' | 'added', text: string }[],
+    added: string[],
+    removed: string[],
+    modified: string[],
+    fullTextReplacement?: string
+  }>({
     added: [],
     removed: [],
     modified: []
@@ -135,8 +141,36 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
   }
 
   const acceptChanges = () => {
-    // Applica i cambiamenti al postContent
-    if (changes.removed.length > 0 && changes.added.length > 0) {
+    // Se abbiamo fullTextReplacement (miglioramento parziale), usalo direttamente
+    if (changes.fullTextReplacement) {
+      console.log("🔄 Using full text replacement:", {
+        before: postContent,
+        after: changes.fullTextReplacement
+      })
+
+      setPostContent(changes.fullTextReplacement)
+    }
+    // Se abbiamo un word diff completo, ricostruisci il testo da quello
+    else if (changes.wordDiff && changes.wordDiff.length > 0) {
+      const newContent = changes.wordDiff
+        .map(wordChange => {
+          if (wordChange.type === 'removed') {
+            return '' // Rimuovi le parole marcate come rimosse
+          }
+          return wordChange.text // Mantieni parole unchanged e aggiungi quelle added
+        })
+        .join('')
+
+      console.log("🔄 Word diff content update:", {
+        before: postContent,
+        after: newContent,
+        wordDiffLength: changes.wordDiff.length
+      })
+
+      setPostContent(newContent)
+    }
+    // Fallback al metodo precedente
+    else if (changes.removed.length > 0 && changes.added.length > 0) {
       const removedText = changes.removed[0]
       const addedText = changes.added[0]
 
@@ -196,6 +230,65 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
     console.log("✅ Changes accepted and state reset")
   }
 
+  // Funzione per calcolare diff intelligente parola per parola
+  const calculateWordDiff = (original: string, enhanced: string) => {
+    const originalWords = original.split(/(\s+)/)
+    const enhancedWords = enhanced.split(/(\s+)/)
+
+    const changes: { type: 'unchanged' | 'removed' | 'added', text: string }[] = []
+
+    let i = 0, j = 0
+
+    while (i < originalWords.length || j < enhancedWords.length) {
+      if (i >= originalWords.length) {
+        // Parole aggiunte alla fine
+        changes.push({ type: 'added', text: enhancedWords[j] })
+        j++
+      } else if (j >= enhancedWords.length) {
+        // Parole rimosse dalla fine
+        changes.push({ type: 'removed', text: originalWords[i] })
+        i++
+      } else if (originalWords[i] === enhancedWords[j]) {
+        // Parole identiche
+        changes.push({ type: 'unchanged', text: originalWords[i] })
+        i++
+        j++
+      } else {
+        // Cerca se la parola originale esiste più avanti nel testo enhanced
+        const foundInEnhanced = enhancedWords.findIndex((word, idx) => idx > j && word === originalWords[i])
+
+        if (foundInEnhanced !== -1) {
+          // Aggiungi le parole prima della corrispondenza come "aggiunte"
+          for (let k = j; k < foundInEnhanced; k++) {
+            changes.push({ type: 'added', text: enhancedWords[k] })
+          }
+          j = foundInEnhanced + 1
+          changes.push({ type: 'unchanged', text: originalWords[i] })
+          i++
+        } else {
+          // Cerca se la parola enhanced esiste più avanti nel testo originale
+          const foundInOriginal = originalWords.findIndex((word, idx) => idx > i && word === enhancedWords[j])
+
+          if (foundInOriginal !== -1) {
+            // Rimuovi le parole prima della corrispondenza
+            for (let k = i; k < foundInOriginal; k++) {
+              changes.push({ type: 'removed', text: originalWords[k] })
+            }
+            i = foundInOriginal
+          } else {
+            // Sostituzione semplice
+            changes.push({ type: 'removed', text: originalWords[i] })
+            changes.push({ type: 'added', text: enhancedWords[j] })
+            i++
+            j++
+          }
+        }
+      }
+    }
+
+    return changes
+  }
+
   const enhanceSelection = async (enhanceType: string, customInstruction: string = "") => {
     if (!selectedText) return
 
@@ -226,21 +319,21 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
           originalInContent: postContent.includes(selectedText)
         })
 
-        // Imposta i cambiamenti per la preview - usa il testo normalizzato
-        const normalizedSelectedText = selectedText.trim()
+        // Calcola diff intelligente nel contesto del post completo
+        const updatedFullText = postContent.replace(selectedText.trim(), data.enhanced_text.trim())
+        const wordDiff = calculateWordDiff(postContent, updatedFullText)
+
         setChanges({
+          wordDiff, // Word diff del post completo
           added: [data.enhanced_text],
-          removed: [normalizedSelectedText], // Usa il testo normalizzato
-          modified: []
+          removed: [selectedText.trim()],
+          modified: [],
+          fullTextReplacement: updatedFullText // Salva il testo completo per l'accept
         })
 
-        console.log('🎯 Changes set:', {
-          added: [data.enhanced_text],
-          removed: [normalizedSelectedText],
-          originalSelected: selectedText
-        })
+        console.log('🎯 Word diff calculated:', wordDiff)
       } else {
-        console.error('❌ Enhancement failed:', data.error)
+        console.error('❌ Enhancement failed:', data.error || 'Unknown error')
         // Fallback semplice
         const normalizedSelectedText = selectedText.trim()
         setChanges({
@@ -308,10 +401,8 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
       if (textareaRef.current) {
         textareaRef.current.select()
         textareaRef.current.focus()
-        // Imposta anche il selectedText per attivare il menu
-        setSelectedText(postContent)
+        // Non impostiamo automaticamente selectedText - l'utente deve selezionare manualmente
         setIsTextSelected(true)
-        setShowVibeMenu(true)
       }
     }, 100)
   }
@@ -319,6 +410,47 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
   const renderChangesView = () => {
     // Ricostruisci il testo completo mostrando le modifiche inline
     const renderTextWithChanges = () => {
+      // Se abbiamo un word diff, usalo per rendering intelligente
+      if (changes.wordDiff && changes.wordDiff.length > 0) {
+        return (
+          <div className="text-base leading-relaxed">
+            {changes.wordDiff.map((wordChange, index) => {
+              if (wordChange.type === 'unchanged') {
+                return <span key={index}>{wordChange.text}</span>
+              } else if (wordChange.type === 'removed') {
+                return (
+                  <span
+                    key={index}
+                    className="relative text-gray-900 line-through font-medium px-1 py-0.5 rounded-sm mr-1"
+                    style={{
+                      background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(248, 113, 113, 0.3) 100%)',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                    }}
+                  >
+                    {wordChange.text}
+                  </span>
+                )
+              } else if (wordChange.type === 'added') {
+                return (
+                  <span
+                    key={index}
+                    className="relative text-gray-900 font-medium px-1 py-0.5 rounded-sm"
+                    style={{
+                      background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.3) 0%, rgba(74, 222, 128, 0.3) 100%)',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                    }}
+                  >
+                    {wordChange.text}
+                  </span>
+                )
+              }
+              return null
+            })}
+          </div>
+        )
+      }
+
+      // Fallback al metodo precedente se non c'è word diff
       if (changes.removed.length === 0 && changes.added.length === 0) {
         return <span>{postContent}</span>
       }
