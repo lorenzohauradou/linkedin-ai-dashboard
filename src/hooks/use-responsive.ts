@@ -50,6 +50,13 @@ export const useResponsive = () => {
     setIsPostCreatorOpen(false)
   }, [])
 
+  // Reset degli stati al cambio di breakpoint per evitare stati inconsistenti
+  useEffect(() => {
+    if (!isMobile && isPostCreatorOpen) {
+      setIsPostCreatorOpen(false)
+    }
+  }, [isMobile, isPostCreatorOpen])
+
   // Auto-chiudi overlay quando si clicca fuori (mobile)
   const handleOverlayClick = useCallback(() => {
     if (isMobile) {

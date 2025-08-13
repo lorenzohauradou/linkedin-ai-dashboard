@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "../ui/button"
-import { Badge } from "../ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { Button } from "../../ui/button"
+import { Badge } from "../../ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar"
 import { Heart, ThumbsUp, MessageSquare, Eye, Zap, FileText } from 'lucide-react'
 
-import { PostOption } from "../../types/post"
-import { processPostContent } from "../../lib/post-utils"
+import { PostOption } from "../../../types/post"
+import { processPostContent } from "../../../lib/post-utils"
 
 interface MultiAngleSelectorProps {
     options: PostOption[]

@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { Button } from "../ui/button"
-import { Card, CardContent } from "../ui/card"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
+import { Avatar, AvatarFallback, AvatarImage } from "../../ui/avatar"
+import { Button } from "../../ui/button"
+import { Card, CardContent } from "../../ui/card"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../ui/tooltip"
 import { Heart, Send, MoreHorizontal, ThumbsUp, Wand2, MessageSquare, Sparkles, Edit } from 'lucide-react'
-import { useAuth } from "../../contexts/auth-context"
-import { PublishSuccess } from "../ui/publish-success"
+import { useAuth } from "../../../contexts/auth-context"
+import { PublishSuccess } from "../../ui/publish-success"
+import AnimatedBackground from "../../ui/animated-background"
 
 interface PostPreviewProps {
   initialContent?: string

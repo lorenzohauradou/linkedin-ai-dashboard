@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Button } from "../ui/button"
-import { Textarea } from "../ui/textarea"
-import { Badge } from "../ui/badge"
+import { Button } from "../../ui/button"
+import { Textarea } from "../../ui/textarea"
+import { Badge } from "../../ui/badge"
 import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, FileImage, ChevronDown } from 'lucide-react'
-import { TypewriterPlaceholder } from "../ui/typewriter-placeholder"
-import { TypewriterText } from "../ui/typewriter-text"
+import { TypewriterPlaceholder } from "../../ui/typewriter-placeholder"
+import { TypewriterText } from "../../ui/typewriter-text"
 
 interface Brain {
   id: string
@@ -15,8 +15,8 @@ interface Brain {
   is_active: boolean
 }
 
-import { PostOption, OutputStyle, ActiveMode } from "../../types/post"
-import { processPostContent, getStyleInfo } from "../../lib/post-utils"
+import { PostOption, OutputStyle, ActiveMode } from "../../../types/post"
+import { processPostContent, getStyleInfo } from "../../../lib/post-utils"
 
 interface PostCreatorProps {
   onGenerate: (input: {
@@ -35,11 +35,10 @@ interface PostCreatorProps {
   isGenerating?: boolean
   onGeneratingChange?: (generating: boolean) => void
   onResetState?: () => void
-  viewMode?: 'preview' | 'multi-angle' | 'welcome'
   onExpandedPostChange?: (postId: string | null) => void
 }
 
-export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, selectedPost, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, viewMode, onExpandedPostChange }: PostCreatorProps) {
+export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, selectedPost, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, onExpandedPostChange }: PostCreatorProps) {
   const [message, setMessage] = useState("")
   const [brains, setBrains] = useState<Brain[]>([])
   const [selectedBrains, setSelectedBrains] = useState<string[]>([])
@@ -340,13 +339,14 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
 
   return (
     <div
-      className={`h-full flex flex-col w-full bg-white max-h-screen relative ${isDragOver ? 'bg-blue-50' : ''}`}
+      className={`h-full flex flex-col w-full bg-white relative ${isDragOver ? 'bg-blue-50' : ''}`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="p-4 border-b border-gray-100 bg-white">
+      {/* Header fisso */}
+      <div className="p-4 border-b border-gray-300 bg-white flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-t-600 rounded-lg flex items-center justify-center">
@@ -372,179 +372,179 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </div>
       </div>
 
-      {/* Nascondi i comandi quando ci sono le preview, durante il loading, quando siamo in modalità preview, o quando abbiamo una chat attiva */}
-      {postOptions.length === 0 && !isGenerating && viewMode !== 'preview' && chatHistory.length === 0 && (
-        <>
-          <div className="p-4 border-b border-gray-50">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
-            <div className="space-y-2">
-              <div className="relative group">
-                {activeMode === 'link' ? (
-                  <div className="w-full">
-                    <input
-                      type="url"
-                      placeholder="https://youtube.com/watch?v=..."
-                      className="w-full h-10 px-3 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50"
-                      value={youtubeUrl}
-                      onChange={(e) => setYoutubeUrl(e.target.value)}
-                    />
-                    <button
-                      onClick={() => {
-                        setActiveMode('text')
-                        setYoutubeUrl('')
-                      }}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-10 text-xs justify-start hover:bg-gray-50 transition-colors touch-manipulation"
-                    onClick={() => {
-                      setActiveMode('link')
-                      if (onInteraction) onInteraction()
-                    }}
-                  >
-                    <Youtube className="w-4 h-4 mr-2 text-red-500" />
-                    YouTube Link
-                  </Button>
-                )}
-                <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="font-medium mb-1">YouTube Video Analysis</div>
-                  <div className="text-gray-300">
-                    Insert a YouTube URL to generate LinkedIn posts based on the video content.
-                  </div>
-                  <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="h-8 text-xs opacity-50" disabled>
-                  <MessageSquare className="w-3 h-3 mr-1" />
-                  Reddit
-                </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs opacity-50" disabled>
-                  <FileText className="w-3 h-3 mr-1" />
-                  Document
-                </Button>
-              </div>
-            </div>
-          </div>
-          <div className="p-4 border-b border-gray-50">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Active Brains</h3>
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full justify-between h-10 text-xs touch-manipulation"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setShowBrainsDropdown(!showBrainsDropdown)
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <Brain className="w-4 h-4" />
-                  <span>
-                    {selectedBrains.length === 0
-                      ? "Select AI Brains"
-                      : `${selectedBrains.length} brain${selectedBrains.length > 1 ? 's' : ''} selected`
-                    }
-                  </span>
-                </div>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showBrainsDropdown ? 'rotate-180' : ''}`} />
-              </Button>
-
-              {showBrainsDropdown && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {brains.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-gray-500">
-                      Loading brains...
+      <div className="flex-1 overflow-y-auto">
+        {/* Mostra i comandi solo quando non ci sono preview attive, non stiamo generando, e non abbiamo una chat attiva */}
+        {postOptions.length === 0 && !isGenerating && chatHistory.length === 0 && !showTypewriterOptions && (
+          <>
+            <div className="p-4 border-b border-gray-50">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
+              <div className="space-y-2">
+                <div className="relative group">
+                  {activeMode === 'link' ? (
+                    <div className="w-full">
+                      <input
+                        type="url"
+                        placeholder="https://youtube.com/watch?v=..."
+                        className="w-full h-10 px-3 text-xs border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50"
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                      />
+                      <button
+                        onClick={() => {
+                          setActiveMode('text')
+                          setYoutubeUrl('')
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        ×
+                      </button>
                     </div>
                   ) : (
-                    brains.map((brain, index) => (
-                      <button
-                        key={brain.id || `brain-${index}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-10 text-xs justify-start hover:bg-gray-50 transition-colors touch-manipulation"
+                      onClick={() => {
+                        setActiveMode('link')
+                        if (onInteraction) onInteraction()
+                      }}
+                    >
+                      <Youtube className="w-4 h-4 mr-2 text-red-500" />
+                      YouTube Link
+                    </Button>
+                  )}
+                  <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="font-medium mb-1">YouTube Video Analysis</div>
+                    <div className="text-gray-300">
+                      Insert a YouTube URL to generate LinkedIn posts based on the video content.
+                    </div>
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" className="h-8 text-xs opacity-50" disabled>
+                    <MessageSquare className="w-3 h-3 mr-1" />
+                    Reddit
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 text-xs opacity-50" disabled>
+                    <FileText className="w-3 h-3 mr-1" />
+                    Document
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-b border-gray-50">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Active Brains</h3>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-between h-10 text-xs touch-manipulation"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowBrainsDropdown(!showBrainsDropdown)
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Brain className="w-4 h-4" />
+                    <span>
+                      {selectedBrains.length === 0
+                        ? "Select AI Brains"
+                        : `${selectedBrains.length} brain${selectedBrains.length > 1 ? 's' : ''} selected`
+                      }
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showBrainsDropdown ? 'rotate-180' : ''}`} />
+                </Button>
+
+                {showBrainsDropdown && (
+                  <div
+                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {brains.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-gray-500">
+                        Loading brains...
+                      </div>
+                    ) : (
+                      brains.map((brain, index) => (
+                        <button
+                          key={brain.id || `brain-${index}`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (brain.id) toggleBrain(brain.id)
+                          }}
+                          className={`w-full text-left px-3 py-3 md:py-2 text-xs hover:bg-gray-50 flex items-center gap-2 touch-manipulation ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                            }`}
+                        >
+                          <div className={`w-2 h-2 rounded-full ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-600' : 'bg-gray-300'
+                            }`} />
+                          <span className="truncate">{brain.name}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              {selectedBrains.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {selectedBrains
+                    .map(brainId => brains.find(b => b.id === brainId))
+                    .filter((brain): brain is Brain => Boolean(brain))
+                    .map((brain, index) => (
+                      <Badge
+                        key={brain.id || `selected-brain-${index}`}
+                        variant="default"
+                        className="text-xs py-0.5 px-2 touch-manipulation"
+                        onClick={() => {
                           if (brain.id) toggleBrain(brain.id)
                         }}
-                        className={`w-full text-left px-3 py-3 md:py-2 text-xs hover:bg-gray-50 flex items-center gap-2 touch-manipulation ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                          }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-600' : 'bg-gray-300'
-                          }`} />
-                        <span className="truncate">{brain.name}</span>
-                      </button>
-                    ))
-                  )}
+                        {brain.name}
+                        <span className="ml-1 text-gray-400 hover:text-gray-600">×</span>
+                      </Badge>
+                    ))}
                 </div>
               )}
             </div>
-            {selectedBrains.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {selectedBrains
-                  .map(brainId => brains.find(b => b.id === brainId))
-                  .filter((brain): brain is Brain => Boolean(brain))
-                  .map((brain, index) => (
-                    <Badge
-                      key={brain.id || `selected-brain-${index}`}
-                      variant="default"
-                      className="text-xs py-0.5 px-2 touch-manipulation"
-                      onClick={() => {
-                        if (brain.id) toggleBrain(brain.id)
-                      }}
-                    >
-                      {brain.name}
-                      <span className="ml-1 text-gray-400 hover:text-gray-600">×</span>
-                    </Badge>
-                  ))}
+            <div className="p-4 border-b border-gray-50">
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Output Style</h3>
+              <div className="space-y-2">
+                <Button
+                  variant={outputStyle === 'short' ? 'default' : 'outline'}
+                  size="sm"
+                  className="w-full justify-start h-10 text-xs touch-manipulation"
+                  onClick={() => setOutputStyle('short')}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Short & Punchy
+                </Button>
+                <Button
+                  variant={outputStyle === 'structured' ? 'default' : 'outline'}
+                  size="sm"
+                  className="w-full justify-start h-10 text-xs touch-manipulation"
+                  onClick={() => setOutputStyle('structured')}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Structured Post
+                </Button>
+                <Button
+                  variant={outputStyle === 'story' ? 'default' : 'outline'}
+                  size="sm"
+                  className="w-full justify-start h-10 text-xs touch-manipulation"
+                  onClick={() => setOutputStyle('story')}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Story Format
+                </Button>
               </div>
-            )}
-          </div>
-          <div className="p-4 border-b border-gray-50">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Output Style</h3>
-            <div className="space-y-2">
-              <Button
-                variant={outputStyle === 'short' ? 'default' : 'outline'}
-                size="sm"
-                className="w-full justify-start h-10 text-xs touch-manipulation"
-                onClick={() => setOutputStyle('short')}
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Short & Punchy
-              </Button>
-              <Button
-                variant={outputStyle === 'structured' ? 'default' : 'outline'}
-                size="sm"
-                className="w-full justify-start h-10 text-xs touch-manipulation"
-                onClick={() => setOutputStyle('structured')}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Structured Post
-              </Button>
-              <Button
-                variant={outputStyle === 'story' ? 'default' : 'outline'}
-                size="sm"
-                className="w-full justify-start h-10 text-xs touch-manipulation"
-                onClick={() => setOutputStyle('story')}
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Story Format
-              </Button>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      <div className="flex-1 p-4 overflow-y-auto">
         {/* Chat History */}
         {chatHistory.length > 0 && (
-          <div className="space-y-4 mb-6">
+          <div className="p-4 space-y-4 mb-6">
             {chatHistory.map((entry, index) => (
               <div key={index} className="flex items-start gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${entry.type === 'user' ? 'bg-blue-500' : 'bg-gray-500'
@@ -573,7 +573,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
 
         {/* Thinking State */}
         {isThinking && (
-          <div className="flex items-start gap-3 mb-6">
+          <div className="p-4 flex items-start gap-3 mb-6">
             <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-medium">AI</span>
             </div>
@@ -594,7 +594,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
 
         {/* Typewriter Options */}
         {showTypewriterOptions && generatedOptions.length > 0 && (
-          <div className="space-y-3 mb-6">
+          <div className="p-4 space-y-3 mb-6">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-xs font-medium">AI</span>
@@ -697,7 +697,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         )}
 
         {postOptions.length > 0 && !isGenerating && !showTypewriterOptions ? (
-          <div className="space-y-3">
+          <div className="p-4 space-y-3">
 
             {usedPostId && (
               <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -764,7 +764,6 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                               {processedContent}
                             </div>
 
-                            {/* Buttons sotto il messaggio */}
                             <div className="flex items-center gap-2 mt-2 ml-1">
                               <button
                                 onClick={() => handleUsePost(option)}
@@ -810,6 +809,64 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
             )}
           </div>
         ) : null}
+
+        {/* File upload preview */}
+        {uploadedFile && (
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {/* Header con info file e bottone rimuovi */}
+              <div className="flex items-center justify-between p-3 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    {uploadedFile?.type.startsWith('video/') ? (
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    ) : (
+                      <Image className="w-4 h-4 text-blue-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
+                    <p className="text-xs text-gray-500">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeFile}
+                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full touch-manipulation"
+                >
+                  ✕
+                </Button>
+              </div>
+
+              {filePreview && (
+                <div className="relative">
+                  {uploadedFile?.type.startsWith('video/') ? (
+                    <video
+                      src={filePreview}
+                      className="w-full h-auto max-h-48 object-cover"
+                      controls
+                      preload="metadata"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={filePreview}
+                      alt="Uploaded preview"
+                      className="w-full h-auto max-h-48 object-cover"
+                    />
+                  )}
+                  <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                    {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Drag & Drop Overlay */}
@@ -823,63 +880,6 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
             </div>
             <p className="text-blue-600 font-medium text-lg">Drop your file here</p>
             <p className="text-blue-500 text-sm">Images up to 10MB, videos up to 100MB</p>
-          </div>
-        </div>
-      )}
-
-      {uploadedFile && (
-        <div className="p-4 border-t border-gray-100 bg-gray-50">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            {/* Header con info file e bottone rimuovi */}
-            <div className="flex items-center justify-between p-3 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  {uploadedFile?.type.startsWith('video/') ? (
-                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  ) : (
-                    <Image className="w-4 h-4 text-blue-600" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
-                  <p className="text-xs text-gray-500">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={removeFile}
-                className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full touch-manipulation"
-              >
-                ✕
-              </Button>
-            </div>
-
-            {filePreview && (
-              <div className="relative">
-                {uploadedFile?.type.startsWith('video/') ? (
-                  <video
-                    src={filePreview}
-                    className="w-full h-auto max-h-64 object-cover"
-                    controls
-                    preload="metadata"
-                    muted
-                    playsInline
-                  />
-                ) : (
-                  <img
-                    src={filePreview}
-                    alt="Uploaded preview"
-                    className="w-full h-auto max-h-64 object-cover"
-                  />
-                )}
-                <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                  {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -1023,12 +1023,6 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Pannello per modalità preview */}
-      {viewMode === 'preview' && (
-        <div className="p-4">
         </div>
       )}
     </div>

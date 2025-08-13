@@ -2,16 +2,18 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { LinkedInDashboard } from "../../components/dashboard/linkedin-dashboard"
 import { useAuth } from "../../contexts/auth-context"
 
 export default function DashboardPage() {
-    const { isAuthenticated, isLoading, user } = useAuth()
+    const { isAuthenticated, isLoading } = useAuth()
     const router = useRouter()
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
             router.push('/login')
+        } else if (!isLoading && isAuthenticated) {
+            // Redirect to post-generator as default page
+            router.push('/dashboard/post-generator')
         }
     }, [isAuthenticated, isLoading, router])
 
@@ -23,9 +25,5 @@ export default function DashboardPage() {
         )
     }
 
-    if (!isAuthenticated) {
-        return null // Will redirect to login
-    }
-
-    return <LinkedInDashboard />
+    return null // Will redirect
 }

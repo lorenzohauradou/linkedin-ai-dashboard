@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect } from "react"
-import { Button } from "../ui/button"
+import { Button } from "../../ui/button"
 import { X } from 'lucide-react'
 import { PostCreator } from "./post-creator"
 
-import { PostOption } from "../../types/post"
+import { PostOption } from "../../../types/post"
 
 interface MobilePostCreatorProps {
     isOpen: boolean
@@ -103,7 +103,6 @@ export function MobilePostCreator({
                             onInteraction={onInteraction}
                             onGeneratingChange={onGeneratingChange}
                             onResetState={onResetState}
-                            viewMode={viewMode}
                         />
                         {isGenerating && (
                             <div className="absolute inset-0 bg-white/98 backdrop-blur-sm flex items-center justify-center z-50 rounded-3xl">
