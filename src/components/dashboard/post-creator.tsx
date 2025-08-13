@@ -6,6 +6,7 @@ import { Textarea } from "../ui/textarea"
 import { Badge } from "../ui/badge"
 import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, FileImage, ChevronDown } from 'lucide-react'
 import { TypewriterPlaceholder } from "../ui/typewriter-placeholder"
+import { TypewriterText } from "../ui/typewriter-text"
 
 interface Brain {
   id: string
@@ -32,10 +33,11 @@ interface PostCreatorProps {
   onInteraction?: () => void
   isGenerating?: boolean
   onGeneratingChange?: (generating: boolean) => void
+  onResetState?: () => void
   viewMode?: 'preview' | 'multi-angle' | 'welcome'
 }
 
-export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, viewMode }: PostCreatorProps) {
+export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, viewMode }: PostCreatorProps) {
   const [message, setMessage] = useState("")
   const [brains, setBrains] = useState<Brain[]>([])
   const [selectedBrains, setSelectedBrains] = useState<string[]>([])
@@ -47,12 +49,23 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
   const [youtubeUrl, setYoutubeUrl] = useState<string>("")
   const isGenerating = externalIsGenerating ?? false
   const setIsGenerating = onGeneratingChange ?? (() => { })
-  const [loadingStage, setLoadingStage] = useState<'uploading' | 'analyzing' | 'generating'>('uploading')
   const [isDragOver, setIsDragOver] = useState(false)
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
   const [usedPostId, setUsedPostId] = useState<string | null>(null)
   const [generateMultipleAngles, setGenerateMultipleAngles] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Chat history states
+  const [chatHistory, setChatHistory] = useState<Array<{
+    type: 'user' | 'ai' | 'thinking',
+    content: string,
+    timestamp: number,
+    file?: File
+  }>>([])
+  const [isThinking, setIsThinking] = useState(false)
+  const [generatedOptions, setGeneratedOptions] = useState<PostOption[]>([])
+  const [showTypewriterOptions, setShowTypewriterOptions] = useState(false)
+  const [animatedPosts, setAnimatedPosts] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchBrains()
@@ -72,6 +85,16 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     setExpandedPostId(null)
     setUsedPostId(null)
   }, [postOptions])
+
+  // Gestisci aggiornamenti postOptions per chat flow
+  useEffect(() => {
+    if (postOptions.length > 0 && !showTypewriterOptions) {
+      setIsThinking(false)
+      setGeneratedOptions(postOptions)
+      setShowTypewriterOptions(true)
+      setExpandedPostId(null) // Reset espansione per nuove opzioni
+    }
+  }, [postOptions, showTypewriterOptions])
 
   const fetchBrains = async () => {
     try {
@@ -235,11 +258,26 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
   const handleSubmit = () => {
     if (!message.trim() && !uploadedFile && !youtubeUrl.trim()) return
 
+    const userMessage = activeMode === 'link' && youtubeUrl ? `${message}\n\nYouTube URL: ${youtubeUrl}` : message
+
+    // Aggiungi messaggio utente alla chat
+    setChatHistory(prev => [...prev, {
+      type: 'user',
+      content: userMessage,
+      timestamp: Date.now(),
+      file: uploadedFile || undefined
+    }])
+
+    // Attiva thinking state
+    setIsThinking(true)
+    setShowTypewriterOptions(false)
+    setGeneratedOptions([])
+
     // Attiva lo stato di loading
     setIsGenerating(true)
 
     onGenerate({
-      message: activeMode === 'link' && youtubeUrl ? `${message}\n\nYouTube URL: ${youtubeUrl}` : message,
+      message: userMessage,
       selectedBrains,
       activeMode,
       outputStyle,
@@ -258,6 +296,22 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     setUsedPostId(option.id)
     setExpandedPostId(option.id) // Assicurati che sia espanso
     onSelectOption?.(option)
+  }
+
+  const handleNewChat = () => {
+    setChatHistory([])
+    setIsThinking(false)
+    setShowTypewriterOptions(false)
+    setGeneratedOptions([])
+    setUsedPostId(null)
+    setExpandedPostId(null)
+    setAnimatedPosts(new Set())
+    setMessage("")
+    removeFile()
+    setYoutubeUrl("")
+    setActiveMode('text')
+    // Reset anche il contenuto della preview
+    onResetState?.()
   }
 
   return (
@@ -282,7 +336,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => window.location.reload()}
+              onClick={handleNewChat}
               className="text-gray-500 hover:text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100"
             >
               New chat
@@ -294,8 +348,8 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </div>
       </div>
 
-      {/* Nascondi i comandi quando ci sono le preview, durante il loading, o quando siamo in modalità preview */}
-      {postOptions.length === 0 && !isGenerating && viewMode !== 'preview' && (
+      {/* Nascondi i comandi quando ci sono le preview, durante il loading, quando siamo in modalità preview, o quando abbiamo una chat attiva */}
+      {postOptions.length === 0 && !isGenerating && viewMode !== 'preview' && chatHistory.length === 0 && (
         <>
           <div className="p-4 border-b border-gray-50">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
@@ -463,36 +517,159 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </>
       )}
 
-      {isGenerating && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-50 to-purple-50 rounded-full mb-4">
-              <div className="animate-spin w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full"></div>
-            </div>
-            {loadingStage === 'uploading' && (
-              <>
-                <p className="text-gray-600 font-medium">Generating your Posts</p>
-                <p className="text-sm text-gray-500 mt-1">Getting your media ready for AI magic</p>
-              </>
-            )}
-            {loadingStage === 'analyzing' && (
-              <>
-                <p className="text-gray-600 font-medium">AI is analyzing your content...</p>
-                <p className="text-sm text-gray-500 mt-1">Extracting insights to create engaging posts</p>
-              </>
-            )}
-            {loadingStage === 'generating' && (
-              <>
-                <p className="text-gray-600 font-medium">Crafting your LinkedIn posts...</p>
-                <p className="text-sm text-gray-500 mt-1">Creating 3 unique angles that drive engagement</p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 p-4 overflow-y-auto">
-        {postOptions.length > 0 && !isGenerating ? (
+        {/* Chat History */}
+        {chatHistory.length > 0 && (
+          <div className="space-y-4 mb-6">
+            {chatHistory.map((entry, index) => (
+              <div key={index} className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${entry.type === 'user' ? 'bg-blue-500' : 'bg-gray-500'
+                  }`}>
+                  <span className="text-white text-xs font-medium">
+                    {entry.type === 'user' ? 'U' : 'AI'}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <div className={`rounded-2xl p-4 text-sm ${entry.type === 'user'
+                    ? 'bg-blue-500 text-white rounded-tr-md'
+                    : 'bg-gray-100 text-gray-800 rounded-tl-md'
+                    }`}>
+                    {entry.content}
+                    {entry.file && (
+                      <div className="mt-2 p-2 bg-white/20 rounded-md text-xs">
+                        📎 {entry.file.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Thinking State */}
+        {isThinking && (
+          <div className="flex items-start gap-3 mb-6">
+            <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-xs font-medium">AI</span>
+            </div>
+            <div className="flex-1">
+              <div className="bg-gray-100 rounded-2xl rounded-tl-md p-4 text-sm text-gray-600">
+                <span className="inline-flex items-center gap-1">
+                  Thinking
+                  <span className="flex gap-1">
+                    <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Typewriter Options */}
+        {showTypewriterOptions && generatedOptions.length > 0 && (
+          <div className="space-y-3 mb-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-medium">AI</span>
+              </div>
+              <div className="flex-1">
+                <div className="bg-gray-100 rounded-2xl rounded-tl-md p-4 text-sm text-gray-600">
+                  I've generated 3 different angles for your post. Select the one that resonates most with you:
+                </div>
+              </div>
+            </div>
+
+            {generatedOptions.map((option, index) => {
+              const styleInfo = getStyleInfo(option.style)
+              const isExpanded = expandedPostId === option.id
+              const shouldTruncate = option.content.length > 150
+              const previewText = shouldTruncate
+                ? option.content.substring(0, 150) + "..."
+                : option.content
+
+              return (
+                <div key={option.id} className="relative">
+                  {!isExpanded ? (
+                    // Compact Preview Card
+                    <div
+                      className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 hover:shadow-sm transition-all duration-200"
+                      onClick={() => setExpandedPostId(option.id)}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${styleInfo.color}`}>
+                          {styleInfo.label}
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {shouldTruncate && <span>Click to read full post</span>}
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-700 leading-relaxed">
+                        <TypewriterText
+                          text={previewText}
+                          speed={15}
+                          delay={index * 800}
+                          shouldAnimate={!animatedPosts.has(option.id)}
+                          onComplete={() => {
+                            setAnimatedPosts(prev => new Set([...prev, option.id]))
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    // Expanded Chat Bubble
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-xs font-medium">AI</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="bg-gray-100 rounded-2xl rounded-tl-md p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${styleInfo.color}`}>
+                              {styleInfo.label}
+                            </span>
+                            <button
+                              onClick={() => setExpandedPostId(null)}
+                              className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                              </svg>
+                            </button>
+                          </div>
+                          <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line mb-4">
+                            {option.content}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleUsePost(option)}
+                              className="bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-blue-600 transition-colors"
+                            >
+                              Use this post
+                            </button>
+                            <button
+                              onClick={() => setExpandedPostId(null)}
+                              className="text-xs text-gray-500 hover:text-gray-700 underline"
+                            >
+                              Show less
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {postOptions.length > 0 && !isGenerating && !showTypewriterOptions ? (
           <div className="space-y-3">
 
             {usedPostId && (
@@ -680,7 +857,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </div>
       )}
 
-      {!usedPostId && (
+      {!usedPostId && chatHistory.length === 0 && (
         <div className="p-4 bg-white border-t border-gray-100">
           <div className="space-y-3">
             <div className="relative">
@@ -763,6 +940,54 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               >
                 <Wand2 className="w-4 h-4 mr-2" />
                 Generate
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat input quando abbiamo una chat attiva ma nessun post selezionato */}
+      {chatHistory.length > 0 && !usedPostId && !isThinking && !showTypewriterOptions && (
+        <div className="p-4 bg-white border-t border-gray-100">
+          <div className="space-y-3">
+            <div className="relative">
+              <Textarea
+                placeholder="Continue the conversation..."
+                value={message}
+                className="min-h-[60px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-base leading-relaxed"
+                onChange={(e) => setMessage(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*,.mp4,.mov,.avi,.mkv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  <Image className="w-4 h-4" />
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                className={`rounded-xl h-9 px-4 transition-all duration-200 ${message.trim() || uploadedFile
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                disabled={!message.trim() && !uploadedFile}
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Send
               </Button>
             </div>
           </div>

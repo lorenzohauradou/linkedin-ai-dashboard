@@ -23,6 +23,7 @@ export function LinkedInDashboard() {
     isGenerating,
     generatePost,
     selectOption,
+    resetState,
     setIsGenerating
   } = usePostGeneration()
 
@@ -128,6 +129,7 @@ export function LinkedInDashboard() {
               onInteraction={handleInteraction}
               isGenerating={isGenerating}
               onGeneratingChange={setIsGenerating}
+              onResetState={resetState}
               viewMode={viewMode}
             />
           </div>
@@ -144,6 +146,7 @@ export function LinkedInDashboard() {
         isGenerating={isGenerating}
         onInteraction={handleInteraction}
         onGeneratingChange={setIsGenerating}
+        onResetState={resetState}
         viewMode={viewMode}
       />
     </div>

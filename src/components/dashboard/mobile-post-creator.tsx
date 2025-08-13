@@ -17,6 +17,7 @@ interface MobilePostCreatorProps {
     isGenerating?: boolean
     onInteraction?: () => void
     onGeneratingChange?: (generating: boolean) => void
+    onResetState?: () => void
     viewMode?: 'preview' | 'multi-angle' | 'welcome'
 }
 
@@ -30,6 +31,7 @@ export function MobilePostCreator({
     isGenerating,
     onInteraction,
     onGeneratingChange,
+    onResetState,
     viewMode
 }: MobilePostCreatorProps) {
     // Previeni scroll del body quando è aperto (ma permetti scroll interno)
@@ -97,6 +99,7 @@ export function MobilePostCreator({
                             isGenerating={isGenerating}
                             onInteraction={onInteraction}
                             onGeneratingChange={onGeneratingChange}
+                            onResetState={onResetState}
                             viewMode={viewMode}
                         />
                         {isGenerating && (
