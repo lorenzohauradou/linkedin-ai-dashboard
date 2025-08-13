@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { content, contentType, selectedBrains, contentUrl, assetId } = body
+        const { content, contentType, selectedBrains, contentUrl, assetId, outputStyle } = body
 
-        console.log('🔍 Next.js API ricevuto:', { content, contentType, selectedBrains, contentUrl, assetId })
+        console.log('🔍 Next.js API ricevuto:', { content, contentType, selectedBrains, contentUrl, assetId, outputStyle })
 
         // Prepara i dati per il backend
         const generateData = {
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
             content_url: contentUrl,
             brain_ids: selectedBrains,
             assetId: assetId, // Passa l'assetId al backend
+            output_style: outputStyle, // Aggiungi output style
             mode: 'multi_angle',
             angles: ['takeaways', 'personal', 'question'] // Gli angoli che vogliamo generare
         }

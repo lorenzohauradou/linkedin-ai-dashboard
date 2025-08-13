@@ -72,6 +72,7 @@ export const usePostGeneration = () => {
         selectedBrains: input.selectedBrains,
         contentUrl: input.activeMode === 'link' ? input.message : null,
         assetId: assetId,
+        outputStyle: input.outputStyle,
         generateMultipleAngles: input.generateMultipleAngles
       }
 
