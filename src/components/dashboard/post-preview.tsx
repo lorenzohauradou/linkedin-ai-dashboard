@@ -19,12 +19,12 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
   const [postContent, setPostContent] = useState(initialContent)
   const [isTextSelected, setIsTextSelected] = useState(false)
   const [selectedText, setSelectedText] = useState("")
-  const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 })
   const [showVibeMenu, setShowVibeMenu] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [customInstruction, setCustomInstruction] = useState("")
   const [showCustomInput, setShowCustomInput] = useState(false)
   const [isHighlighted, setIsHighlighted] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
   const [changes, setChanges] = useState<{
     wordDiff?: { type: 'unchanged' | 'removed' | 'added', text: string }[],
     added: string[],
@@ -293,6 +293,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
     if (!selectedText) return
 
     setShowVibeMenu(false)
+    setIsThinking(true)
 
     try {
       console.log('🚀 Enhancing selection:', { selectedText, enhanceType, customInstruction })
@@ -351,6 +352,8 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         removed: [normalizedSelectedText],
         modified: []
       })
+    } finally {
+      setIsThinking(false)
     }
 
     // Reset input personalizzato
@@ -401,31 +404,27 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
       if (textareaRef.current) {
         textareaRef.current.select()
         textareaRef.current.focus()
-        // Non impostiamo automaticamente selectedText - l'utente deve selezionare manualmente
+        handleTextSelection()
         setIsTextSelected(true)
       }
     }, 100)
   }
 
   const renderChangesView = () => {
-    // Ricostruisci il testo completo mostrando le modifiche inline
+    // Rendering delle modifiche preservando la formattazione originale
     const renderTextWithChanges = () => {
-      // Se abbiamo un word diff, usalo per rendering intelligente
+      // Se abbiamo un word diff, usalo per rendering inline preservando spazi
       if (changes.wordDiff && changes.wordDiff.length > 0) {
         return (
-          <div className="text-base leading-relaxed">
+          <>
             {changes.wordDiff.map((wordChange, index) => {
               if (wordChange.type === 'unchanged') {
-                return <span key={index}>{wordChange.text}</span>
+                return <span key={index} className="text-gray-900">{wordChange.text}</span>
               } else if (wordChange.type === 'removed') {
                 return (
                   <span
                     key={index}
-                    className="relative text-gray-900 line-through font-medium px-1 py-0.5 rounded-sm mr-1"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(248, 113, 113, 0.3) 100%)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}
+                    className="bg-red-100 text-red-800 px-1 rounded-sm line-through decoration-red-500 decoration-2"
                   >
                     {wordChange.text}
                   </span>
@@ -434,11 +433,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
                 return (
                   <span
                     key={index}
-                    className="relative text-gray-900 font-medium px-1 py-0.5 rounded-sm"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.3) 0%, rgba(74, 222, 128, 0.3) 100%)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}
+                    className="bg-green-100 text-green-800 px-1 rounded-sm font-medium"
                   >
                     {wordChange.text}
                   </span>
@@ -446,78 +441,69 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
               }
               return null
             })}
-          </div>
+          </>
         )
       }
 
-      // Fallback al metodo precedente se non c'è word diff
-      if (changes.removed.length === 0 && changes.added.length === 0) {
-        return <span>{postContent}</span>
-      }
-
-      // Usa sempre il postContent originale per mostrare i changes
-      const displayText = postContent
-
-      // Se c'è una sostituzione, mostra il testo con evidenziazione inline
+      // Rendering pulito per sostituzioni semplici preservando newline e spazi
       if (changes.removed.length > 0 && changes.added.length > 0) {
         const removedText = changes.removed[0]
         const addedText = changes.added[0]
+        const displayText = postContent
 
-        // Sostituisci SOLO la prima occorrenza per evitare duplicazioni
-        const parts = displayText.split(removedText, 2)
+        // Trova la posizione del testo da sostituire
+        const beforeText = displayText.substring(0, displayText.indexOf(removedText))
+        const afterText = displayText.substring(displayText.indexOf(removedText) + removedText.length)
 
         return (
-          <div className="text-base leading-relaxed">
-            {parts.map((part, index) => (
-              index < parts.length - 1 ? (
-                <span key={index}>
-                  {part}
-                  <span
-                    className="relative text-gray-900 line-through font-medium px-1 py-0.5 rounded-sm mr-1"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.3) 0%, rgba(248, 113, 113, 0.3) 100%)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}
-                  >
-                    {removedText}
-                  </span>
-                  <span
-                    className="relative text-gray-900 font-medium px-1 py-0.5 rounded-sm"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.3) 0%, rgba(74, 222, 128, 0.3) 100%)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                    }}
-                  >
-                    {addedText}
-                  </span>
-                </span>
-              ) : <span key={index}>{part}</span>
-            ))}
-          </div>
+          <>
+            <span className="text-gray-900">{beforeText}</span>
+            <span className="bg-red-100 text-red-800 px-1 rounded-sm line-through decoration-red-500 decoration-2">
+              {removedText}
+            </span>
+            <span className="bg-green-100 text-green-800 px-1 rounded-sm font-medium">
+              {addedText}
+            </span>
+            <span className="text-gray-900">{afterText}</span>
+          </>
         )
       }
 
-      return <span>{displayText}</span>
+      return <span className="text-gray-900">{postContent}</span>
     }
 
     return (
-      <div className="space-y-3">
-        <div className="min-h-[60px] p-2">
-          {renderTextWithChanges()}
-        </div>
+      <>
+        {renderTextWithChanges()}
 
-        <div className="flex gap-2 pt-2 border-t border-gray-100">
-          <Button size="sm" onClick={acceptChanges} className="bg-green-600 hover:bg-green-700 text-white">
-            Accept Changes
+        {/* Bottoni di controllo posizionati sotto il testo */}
+        <div className="flex gap-3 pt-4 mt-4 border-t border-gray-100">
+          <Button
+            size="sm"
+            onClick={acceptChanges}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Accept
           </Button>
-          <Button size="sm" variant="outline" onClick={() => {
-            setIsHighlighted(false)
-            setChanges({ added: [], removed: [], modified: [] })
-          }}>
-            Cancel
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setIsHighlighted(false)
+              setChanges({ added: [], removed: [], modified: [] })
+            }}
+            className="px-4 py-2 rounded-lg border-gray-300 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Reject
           </Button>
         </div>
-      </div>
+      </>
     )
   }
 
@@ -575,10 +561,37 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
           </div>
 
           <div className="px-6 pb-4 relative">
+            {/* Thinking section sopra il post quando sta processando */}
+            {isThinking && selectedText && (
+              <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-3 text-blue-600 mb-3">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className="text-sm font-medium">AI is thinking...</span>
+                </div>
+                <div className="bg-white border border-blue-100 rounded-md p-3">
+                  <div className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-1">Analyzing</div>
+                  <div className="text-sm text-gray-700">{selectedText}</div>
+                </div>
+              </div>
+            )}
+
             <div className="relative">
               {(changes.added.length > 0 || changes.removed.length > 0) ? (
-                // Mostra i cambiamenti AI con diff
-                <div className="min-h-[60px] text-base text-gray-900 leading-relaxed p-3">
+                // Mostra i cambiamenti AI mantenendo la struttura della textarea
+                <div
+                  className="w-full min-h-[60px] text-base text-gray-900 leading-relaxed resize-none bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                  style={{
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    lineHeight: 'inherit',
+                    whiteSpace: 'pre-wrap', // Mantiene spazi e newline come nella textarea
+                    wordWrap: 'break-word'
+                  }}
+                >
                   {renderChangesView()}
                 </div>
               ) : (
