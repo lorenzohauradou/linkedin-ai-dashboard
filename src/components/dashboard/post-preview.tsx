@@ -7,6 +7,7 @@ import { Card, CardContent } from "../ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 import { Heart, Send, MoreHorizontal, ThumbsUp, Wand2, MessageSquare, Sparkles, Edit } from 'lucide-react'
 import { useAuth } from "../../contexts/auth-context"
+import { PublishSuccess } from "../ui/publish-success"
 
 interface PostPreviewProps {
   initialContent?: string
@@ -37,6 +38,8 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
     modified: []
   })
   const [assetPreview, setAssetPreview] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [publishResult, setPublishResult] = useState<{ url?: string, content?: string }>({})
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -385,7 +388,13 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
       if (response.ok) {
         const result = await response.json()
         console.log("✅ Post published successfully:", result)
-        alert("Post pubblicato con successo su LinkedIn!")
+
+        // Mostra modal di successo invece dell'alert
+        setPublishResult({
+          url: result.url,
+          content: postContent
+        })
+        setShowSuccessModal(true)
       } else {
         const error = await response.json()
         console.error("❌ Publish failed:", error)
@@ -834,6 +843,13 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
           </div>
         </>
       )}
+
+      <PublishSuccess
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        postUrl={publishResult.url}
+        postContent={publishResult.content}
+      />
     </>
   )
 }
