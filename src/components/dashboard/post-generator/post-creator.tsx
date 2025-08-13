@@ -810,60 +810,58 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
           </div>
         ) : null}
 
-        {/* File upload preview */}
         {uploadedFile && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50">
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              {/* Header con info file e bottone rimuovi */}
-              <div className="flex items-center justify-between p-3 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    {uploadedFile?.type.startsWith('video/') ? (
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
+          <div className="p-4">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+              <div className="flex items-center gap-3">
+                <div className="relative flex-shrink-0">
+                  {filePreview ? (
+                    uploadedFile?.type.startsWith('video/') ? (
+                      <video
+                        src={filePreview}
+                        className="w-12 h-12 object-cover rounded-lg"
+                        preload="metadata"
+                        muted
+                      />
                     ) : (
-                      <Image className="w-4 h-4 text-blue-600" />
-                    )}
+                      <img
+                        src={filePreview}
+                        alt="Preview"
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                    )
+                  ) : (
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      {uploadedFile?.type.startsWith('video/') ? (
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      ) : (
+                        <Image className="w-6 h-6 text-blue-600" />
+                      )}
+                    </div>
+                  )}
+                  <div className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                    {uploadedFile?.type.startsWith('video/') ? 'VID' : 'IMG'}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
-                    <p className="text-xs text-gray-500">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}</p>
-                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{uploadedFile.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={removeFile}
-                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full touch-manipulation"
+                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-full touch-manipulation flex-shrink-0"
+                  title="Rimuovi file"
                 >
                   ✕
                 </Button>
               </div>
-
-              {filePreview && (
-                <div className="relative">
-                  {uploadedFile?.type.startsWith('video/') ? (
-                    <video
-                      src={filePreview}
-                      className="w-full h-auto max-h-48 object-cover"
-                      controls
-                      preload="metadata"
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      src={filePreview}
-                      alt="Uploaded preview"
-                      className="w-full h-auto max-h-48 object-cover"
-                    />
-                  )}
-                  <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                    {uploadedFile?.type.startsWith('video/') ? 'Video' : 'Image'}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
