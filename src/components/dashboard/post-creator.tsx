@@ -35,9 +35,10 @@ interface PostCreatorProps {
   onGeneratingChange?: (generating: boolean) => void
   onResetState?: () => void
   viewMode?: 'preview' | 'multi-angle' | 'welcome'
+  onExpandedPostChange?: (postId: string | null) => void
 }
 
-export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, viewMode }: PostCreatorProps) {
+export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, viewMode, onExpandedPostChange }: PostCreatorProps) {
   const [message, setMessage] = useState("")
   const [brains, setBrains] = useState<Brain[]>([])
   const [selectedBrains, setSelectedBrains] = useState<string[]>([])
@@ -86,13 +87,20 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     setUsedPostId(null)
   }, [postOptions])
 
+  // Notifica quando cambia il post espanso
+  useEffect(() => {
+    onExpandedPostChange?.(expandedPostId)
+  }, [expandedPostId, onExpandedPostChange])
+
   // Gestisci aggiornamenti postOptions per chat flow
   useEffect(() => {
-    if (postOptions.length > 0 && !showTypewriterOptions) {
-      setIsThinking(false)
-      setGeneratedOptions(postOptions)
-      setShowTypewriterOptions(true)
-      setExpandedPostId(null) // Reset espansione per nuove opzioni
+    if (postOptions.length > 0) {
+      setIsThinking(false)  // Ferma il thinking quando arrivano i post
+      if (!showTypewriterOptions) {
+        setGeneratedOptions(postOptions)
+        setShowTypewriterOptions(true)
+        setExpandedPostId(null) // Reset espansione per nuove opzioni
+      }
     }
   }, [postOptions, showTypewriterOptions])
 
@@ -577,7 +585,10 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
               </div>
               <div className="flex-1">
                 <div className="bg-gray-100 rounded-2xl rounded-tl-md p-4 text-sm text-gray-600">
-                  I've generated 3 different angles for your post. Select the one that resonates most with you:
+                  {generatedOptions.length === 1
+                    ? "I've generated a post for you. You can use it as is or ask me to modify it:"
+                    : `I've generated ${generatedOptions.length} different angles for your post. Select the one that resonates most with you:`
+                  }
                 </div>
               </div>
             </div>

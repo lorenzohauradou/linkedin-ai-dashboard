@@ -565,16 +565,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
             {isThinking && selectedText && (
               <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center gap-3 text-blue-600 mb-3">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                  </div>
                   <span className="text-sm font-medium">AI is thinking...</span>
-                </div>
-                <div className="bg-white border border-blue-100 rounded-md p-3">
-                  <div className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-1">Analyzing</div>
-                  <div className="text-sm text-gray-700">{selectedText}</div>
                 </div>
               </div>
             )}

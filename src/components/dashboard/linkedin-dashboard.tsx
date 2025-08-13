@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { LinkedInSidebar } from "./linkedin-sidebar"
 import { PostPreview } from "./post-preview"
 import { PostCreator } from "./post-creator"
@@ -27,12 +28,16 @@ export function LinkedInDashboard() {
     setIsGenerating
   } = usePostGeneration()
 
+  // Stato per il post espanso nel pannello destro
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
+
   const {
     viewMode,
     hasInteracted,
     handleInteraction,
     navigateToPreview,
-    navigateToMultiAngle
+    navigateToMultiAngle,
+    resetDashboard
   } = useDashboardState()
 
   const {
@@ -68,6 +73,12 @@ export function LinkedInDashboard() {
   const handleOptionSelect = (option: any) => {
     selectOption(option)
     navigateToPreview()
+  }
+
+  const handleResetState = () => {
+    resetState()      // Reset dei dati del post
+    resetDashboard()  // Reset del view mode e hasInteracted
+    setExpandedPostId(null)  // Reset del post espanso
   }
 
   return (
@@ -112,6 +123,7 @@ export function LinkedInDashboard() {
                     options={postOptions}
                     onSelectOption={handleOptionSelect}
                     isVisible={viewMode === 'multi-angle'}
+                    expandedPostId={expandedPostId}
                   />
                 )}
               </div>
@@ -129,8 +141,9 @@ export function LinkedInDashboard() {
               onInteraction={handleInteraction}
               isGenerating={isGenerating}
               onGeneratingChange={setIsGenerating}
-              onResetState={resetState}
+              onResetState={handleResetState}
               viewMode={viewMode}
+              onExpandedPostChange={setExpandedPostId}
             />
           </div>
         )}
@@ -146,7 +159,7 @@ export function LinkedInDashboard() {
         isGenerating={isGenerating}
         onInteraction={handleInteraction}
         onGeneratingChange={setIsGenerating}
-        onResetState={resetState}
+        onResetState={handleResetState}
         viewMode={viewMode}
       />
     </div>

@@ -13,6 +13,7 @@ interface MultiAngleSelectorProps {
     options: PostOption[]
     onSelectOption: (option: PostOption) => void
     isVisible: boolean
+    expandedPostId?: string | null
 }
 
 
@@ -47,12 +48,17 @@ const getStyleColor = (style: string) => {
     return (styleConfig[style as keyof typeof styleConfig] || styleConfig.default).color
 }
 
-export function MultiAngleSelector({ options, onSelectOption, isVisible }: MultiAngleSelectorProps) {
+export function MultiAngleSelector({ options, onSelectOption, isVisible, expandedPostId }: MultiAngleSelectorProps) {
     const [activeTab, setActiveTab] = useState<string>(options[0]?.id || '1')
 
     if (!isVisible || options.length === 0) return null
 
-    const currentOption = options.find(opt => opt.id === activeTab) || options[0]
+    // Se c'è un post espanso nel pannello destro, usa quello, altrimenti usa il tab attivo
+    const effectiveActiveId = expandedPostId && options.find(opt => opt.id === expandedPostId)
+        ? expandedPostId
+        : activeTab
+
+    const currentOption = options.find(opt => opt.id === effectiveActiveId) || options[0]
 
     // Update activeTab when options change
     if (options.length > 0 && !options.find(opt => opt.id === activeTab)) {
@@ -80,7 +86,7 @@ export function MultiAngleSelector({ options, onSelectOption, isVisible }: Multi
                     <button
                         key={option.id}
                         onClick={() => setActiveTab(option.id)}
-                        className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${activeTab === option.id
+                        className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${effectiveActiveId === option.id
                             ? 'border-blue-500 text-blue-600 bg-blue-50'
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             }`}
