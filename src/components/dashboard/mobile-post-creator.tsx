@@ -14,6 +14,7 @@ interface MobilePostCreatorProps {
     postOptions?: PostOption[]
     onSelectOption?: (option: PostOption) => void
     selectedPostId?: string
+    selectedPost?: string
     isGenerating?: boolean
     onInteraction?: () => void
     onGeneratingChange?: (generating: boolean) => void
@@ -28,6 +29,7 @@ export function MobilePostCreator({
     postOptions,
     onSelectOption,
     selectedPostId,
+    selectedPost,
     isGenerating,
     onInteraction,
     onGeneratingChange,
@@ -96,6 +98,7 @@ export function MobilePostCreator({
                             postOptions={postOptions}
                             onSelectOption={onSelectOption}
                             selectedPostId={selectedPostId}
+                            selectedPost={selectedPost}
                             isGenerating={isGenerating}
                             onInteraction={onInteraction}
                             onGeneratingChange={onGeneratingChange}
@@ -111,7 +114,7 @@ export function MobilePostCreator({
                                     </div>
                                     <div>
                                         <p className="text-gray-900 font-semibold text-xl mb-2">Generating your Posts</p>
-                                        <p className="text-gray-600 text-base">Getting your content ready for AI magic ✨</p>
+                                        <p className="text-gray-600 text-base">Getting your content ready for AI magic...</p>
                                         <div className="mt-6 flex justify-center">
                                             <div className="flex space-x-2">
                                                 <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"></div>

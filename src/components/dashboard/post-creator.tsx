@@ -30,6 +30,7 @@ interface PostCreatorProps {
   postOptions?: PostOption[]
   onSelectOption?: (option: PostOption) => void
   selectedPostId?: string
+  selectedPost?: string
   onInteraction?: () => void
   isGenerating?: boolean
   onGeneratingChange?: (generating: boolean) => void
@@ -38,7 +39,7 @@ interface PostCreatorProps {
   onExpandedPostChange?: (postId: string | null) => void
 }
 
-export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, viewMode, onExpandedPostChange }: PostCreatorProps) {
+export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, selectedPost, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, viewMode, onExpandedPostChange }: PostCreatorProps) {
   const [message, setMessage] = useState("")
   const [brains, setBrains] = useState<Brain[]>([])
   const [selectedBrains, setSelectedBrains] = useState<string[]>([])
@@ -92,7 +93,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     onExpandedPostChange?.(expandedPostId)
   }, [expandedPostId, onExpandedPostChange])
 
-  // Gestisci aggiornamenti postOptions per chat flow
+  // Gestisci aggiornamenti postOptions per chat flow (multi-angle)
   useEffect(() => {
     if (postOptions.length > 0) {
       setIsThinking(false)  // Ferma il thinking quando arrivano i post
@@ -103,6 +104,21 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
       }
     }
   }, [postOptions, showTypewriterOptions])
+
+  // Gestisci post singoli - aggiungi messaggio AI alla chat quando selectedPost viene aggiornato
+  useEffect(() => {
+    // Solo se è un post singolo (non generateMultipleAngles) e abbiamo selectedPost
+    if (selectedPost && !generateMultipleAngles && isThinking) {
+      setIsThinking(false)  // Ferma il thinking
+
+      // Aggiungi il post singolo alla chat come messaggio AI
+      setChatHistory(prev => [...prev, {
+        type: 'ai',
+        content: selectedPost,
+        timestamp: Date.now()
+      }])
+    }
+  }, [selectedPost, generateMultipleAngles, isThinking])
 
   const fetchBrains = async () => {
     try {
@@ -880,6 +896,11 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                   setMessage(e.target.value)
                   // Attiva l'interazione quando l'utente inizia a scrivere
                   if (e.target.value.trim().length > 0 && onInteraction) {
+                    onInteraction()
+                  }
+                }}
+                onFocus={() => {
+                  if (onInteraction) {
                     onInteraction()
                   }
                 }}

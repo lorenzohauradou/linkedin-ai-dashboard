@@ -138,6 +138,7 @@ export function LinkedInDashboard() {
               postOptions={postOptions}
               onSelectOption={handleOptionSelect}
               selectedPostId={selectedPostId}
+              selectedPost={selectedPost}
               onInteraction={handleInteraction}
               isGenerating={isGenerating}
               onGeneratingChange={setIsGenerating}
@@ -156,6 +157,7 @@ export function LinkedInDashboard() {
         postOptions={postOptions}
         onSelectOption={handleOptionSelect}
         selectedPostId={selectedPostId}
+        selectedPost={selectedPost}
         isGenerating={isGenerating}
         onInteraction={handleInteraction}
         onGeneratingChange={setIsGenerating}
