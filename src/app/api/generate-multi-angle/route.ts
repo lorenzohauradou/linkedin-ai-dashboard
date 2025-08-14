@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
 
         console.log('🔍 Next.js API ricevuto:', { content, contentType, selectedBrains, contentUrl, assetId, outputStyle })
 
-        // Prepara i dati per il backend
         const generateData = {
             content: content,
             content_type: contentType, // 'text', 'video', 'article', 'image'
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest) {
 
         console.log('📤 Dati inviati al backend:', generateData)
 
-        // Forward the request to the backend
         const response = await fetch(`${BACKEND_URL}/api/generate-multi-angle`, {
             method: 'POST',
             headers: {

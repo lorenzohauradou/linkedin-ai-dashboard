@@ -9,8 +9,6 @@ export function PostGeneratorRightPanel() {
         selectedPost,
         selectedPostId,
         isGenerating,
-        viewMode,
-        expandedPostId,
         handlePostGeneration,
         handleOptionSelect,
         handleResetState,
