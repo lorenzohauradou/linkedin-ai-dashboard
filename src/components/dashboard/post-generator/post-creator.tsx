@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "../../ui/button"
 import { Textarea } from "../../ui/textarea"
-import { Badge } from "../../ui/badge"
-import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, FileImage, ChevronDown } from 'lucide-react'
+import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, ChevronDown } from 'lucide-react'
 import { TypewriterPlaceholder } from "../../ui/typewriter-placeholder"
 import { TypewriterText } from "../../ui/typewriter-text"
 
@@ -39,6 +39,7 @@ interface PostCreatorProps {
 }
 
 export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, selectedPost, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, onExpandedPostChange }: PostCreatorProps) {
+  const router = useRouter()
   const [message, setMessage] = useState("")
   const [brains, setBrains] = useState<Brain[]>([])
   const [selectedBrains, setSelectedBrains] = useState<string[]>([])
@@ -152,12 +153,56 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
 
   const fetchBrains = async () => {
     try {
-      const response = await fetch('/api/brains')
+      const response = await fetch('/api/knowledge/summary')
       if (response.ok) {
         const data = await response.json()
-        setBrains(data.brains || [])
+
+        // Trasformiamo i dati del summary in formato brains
+        const brains = []
+
+        // Professional DNA
+        if (data.summary?.professional_dna?.has_value_proposition) {
+          brains.push({
+            id: 'professional-dna',
+            name: 'Professional DNA',
+            description: 'Your unique value proposition and voice',
+            is_active: true
+          })
+        }
+
+        // Inspiration Library  
+        if (data.summary?.inspirations?.total_count > 0) {
+          brains.push({
+            id: 'inspiration-library',
+            name: 'Inspiration Library',
+            description: `${data.summary.inspirations.total_count} inspiring posts`,
+            is_active: true
+          })
+        }
+
+        // Gold Nuggets
+        if (data.summary?.gold_nuggets?.total_count > 0) {
+          brains.push({
+            id: 'gold-nuggets',
+            name: 'Gold Nuggets',
+            description: `${data.summary.gold_nuggets.total_count} unique insights`,
+            is_active: true
+          })
+        }
+
+        // Custom Brain
+        if (data.summary?.custom_brain?.has_content) {
+          brains.push({
+            id: 'custom-brain',
+            name: 'Custom Brain',
+            description: data.summary.custom_brain.title || 'Custom knowledge',
+            is_active: true
+          })
+        }
+
+        setBrains(brains)
         // Auto-seleziona i cervelli attivi
-        const activeBrains = data.brains?.filter((brain: Brain) => brain.is_active).map((brain: Brain) => brain.id) || []
+        const activeBrains = brains.filter((brain: Brain) => brain.is_active).map((brain: Brain) => brain.id)
         setSelectedBrains(activeBrains)
       }
     } catch (error) {
@@ -511,107 +556,222 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
             <div className="p-4 border-b border-gray-50">
               <h3 className="text-sm font-medium text-gray-700 mb-3">Active Brains</h3>
               <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-between h-10 text-xs touch-manipulation"
+                <button
+                  className="group relative w-full flex items-center justify-between px-4 py-3 bg-slate-50/50 border border-slate-200/60 rounded-xl hover:bg-slate-100/80 hover:border-slate-300/60 transition-all duration-200"
                   onClick={(e) => {
                     e.stopPropagation()
                     setShowBrainsDropdown(!showBrainsDropdown)
                   }}
                 >
-                  <div className="flex items-center gap-2">
-                    <Brain className="w-4 h-4" />
-                    <span>
+                  <div className="flex items-center gap-3">
+                    {/* Icon container */}
+                    <div className="flex items-center justify-center w-8 h-8 bg-white/80 group-hover:bg-white rounded-lg shadow-sm transition-all duration-200">
+                      <Brain className="w-4 h-4 text-slate-600" />
+                    </div>
+
+                    {/* Text */}
+                    <span className="text-sm font-medium text-slate-700">
                       {selectedBrains.length === 0
                         ? "Select AI Brains"
                         : `${selectedBrains.length} brain${selectedBrains.length > 1 ? 's' : ''} selected`
                       }
                     </span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showBrainsDropdown ? 'rotate-180' : ''}`} />
-                </Button>
+
+                  {/* Chevron */}
+                  <ChevronDown className={`w-4 h-4 text-slate-500 transition-all duration-200 ${showBrainsDropdown ? 'rotate-180' : ''}`} />
+                </button>
 
                 {showBrainsDropdown && (
                   <div
-                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm border border-slate-200/60 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {brains.length === 0 ? (
-                      <div className="px-3 py-2 text-xs text-gray-500">
-                        Loading brains...
+                      <div className="px-3 py-3 text-xs text-gray-500 text-center">
+                        <div className="space-y-2">
+                          <div className="text-gray-400">No Content Brains configured</div>
+                          <div
+                            className="text-blue-600 hover:text-blue-700 cursor-pointer font-medium"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowBrainsDropdown(false)
+                              router.push('/dashboard/content-brains')
+                            }}
+                          >
+                            → Set up your AI training
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      brains.map((brain, index) => (
-                        <button
-                          key={brain.id || `brain-${index}`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            if (brain.id) toggleBrain(brain.id)
-                          }}
-                          className={`w-full text-left px-3 py-3 md:py-2 text-xs hover:bg-gray-50 flex items-center gap-2 touch-manipulation ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                            }`}
-                        >
-                          <div className={`w-2 h-2 rounded-full ${brain.id && selectedBrains.includes(brain.id) ? 'bg-blue-600' : 'bg-gray-300'
-                            }`} />
-                          <span className="truncate">{brain.name}</span>
-                        </button>
-                      ))
+                      brains.map((brain, index) => {
+                        const getIconSrc = (brainId: string) => {
+                          switch (brainId) {
+                            case 'professional-dna':
+                              return '/icons/dnaa.png'
+                            case 'inspiration-library':
+                              return '/icons/inspiration.png'
+                            case 'gold-nuggets':
+                              return '/icons/nugget.png'
+                            case 'custom-brain':
+                              return '/icons/brain.png'
+                            default:
+                              return '/icons/logoicon.png'
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={brain.id || `brain-${index}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (brain.id) toggleBrain(brain.id)
+                            }}
+                            className={`group relative w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 ${brain.id && selectedBrains.includes(brain.id)
+                              ? 'bg-slate-50/50 text-slate-700 border-r-2 border-slate-300'
+                              : 'hover:bg-slate-50 text-slate-700'
+                              }`}
+                          >
+                            {/* Icon container */}
+                            <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${brain.id && selectedBrains.includes(brain.id)
+                              ? 'bg-white/80 shadow-sm ring-1 ring-slate-200'
+                              : 'bg-white/80 group-hover:bg-white shadow-sm'
+                              }`}>
+                              <img
+                                src={getIconSrc(brain.id || '')}
+                                alt={brain.name}
+                                className="w-4 h-4 opacity-80"
+                              />
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1 text-left">
+                              <div className={`font-medium text-sm truncate ${brain.id && selectedBrains.includes(brain.id) ? 'text-slate-700' : 'text-slate-700'
+                                }`}>
+                                {brain.name}
+                              </div>
+                              <div className={`text-xs truncate ${brain.id && selectedBrains.includes(brain.id) ? 'text-slate-500' : 'text-slate-500'
+                                }`}>
+                                {brain.description}
+                              </div>
+                            </div>
+
+                            {/* Selection indicator */}
+                            <div className={`w-2 h-2 rounded-full transition-colors duration-200 ${brain.id && selectedBrains.includes(brain.id) ? 'bg-slate-600' : 'bg-slate-300'
+                              }`} />
+
+                            {/* Subtle indicator for selected */}
+                            {brain.id && selectedBrains.includes(brain.id) && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-slate-100/30 to-transparent pointer-events-none"></div>
+                            )}
+                          </button>
+                        )
+                      })
                     )}
                   </div>
                 )}
               </div>
               {selectedBrains.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
+                <div className="flex flex-wrap gap-2 mt-3">
                   {selectedBrains
                     .map(brainId => brains.find(b => b.id === brainId))
                     .filter((brain): brain is Brain => Boolean(brain))
-                    .map((brain, index) => (
-                      <Badge
-                        key={brain.id || `selected-brain-${index}`}
-                        variant="default"
-                        className="text-xs py-0.5 px-2 touch-manipulation"
-                        onClick={() => {
-                          if (brain.id) toggleBrain(brain.id)
-                        }}
-                      >
-                        {brain.name}
-                        <span className="ml-1 text-gray-400 hover:text-gray-600">×</span>
-                      </Badge>
-                    ))}
+                    .map((brain, index) => {
+                      const getIconSrc = (brainId: string) => {
+                        switch (brainId) {
+                          case 'professional-dna':
+                            return '/icons/dnaa.png'
+                          case 'inspiration-library':
+                            return '/icons/inspiration.png'
+                          case 'gold-nuggets':
+                            return '/icons/nugget.png'
+                          case 'custom-brain':
+                            return '/icons/brain.png'
+                          default:
+                            return '/icons/logoicon.png'
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={brain.id || `selected-brain-${index}`}
+                          className="group relative flex items-center gap-2 bg-slate-50/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-slate-100/80 hover:border-slate-600/60 transition-all duration-200 shadow-sm hover:shadow-md"
+                          onClick={() => {
+                            if (brain.id) toggleBrain(brain.id)
+                          }}
+                        >
+                          {/* Icon */}
+                          <img
+                            src={getIconSrc(brain.id || '')}
+                            alt={brain.name}
+                            className="w-3.5 h-3.5 opacity-80"
+                          />
+
+                          {/* Text */}
+                          <span className="text-xs font-medium text-zinc-900 tracking-wide">
+                            {brain.name}
+                          </span>
+
+                          {/* Close button */}
+                          <div className="ml-1 w-4 h-4 rounded-full bg-slate-200/60 flex items-center justify-center opacity-60 group-hover:opacity-80 group-hover:bg-slate-300/60 transition-all duration-150">
+                            <span className="text-slate-600 text-xs leading-none">×</span>
+                          </div>
+
+                          {/* Subtle inner highlight */}
+                          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-slate-100/20 to-transparent pointer-events-none"></div>
+                        </div>
+                      )
+                    })}
                 </div>
               )}
             </div>
             <div className="p-4 border-b border-gray-50">
               <h3 className="text-sm font-medium text-gray-700 mb-3">Output Style</h3>
               <div className="space-y-2">
-                <Button
-                  variant={outputStyle === 'short' ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-full justify-start h-10 text-xs touch-manipulation"
-                  onClick={() => setOutputStyle('short')}
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Short & Punchy
-                </Button>
-                <Button
-                  variant={outputStyle === 'structured' ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-full justify-start h-10 text-xs touch-manipulation"
-                  onClick={() => setOutputStyle('structured')}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Structured Post
-                </Button>
-                <Button
-                  variant={outputStyle === 'story' ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-full justify-start h-10 text-xs touch-manipulation"
-                  onClick={() => setOutputStyle('story')}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Story Format
-                </Button>
+                {[
+                  { id: 'short', icon: Zap, label: 'Short & Punchy' },
+                  { id: 'structured', icon: FileText, label: 'Long & Structured' },
+                  //{ id: 'story', icon: MessageSquare, label: 'Story Format' }
+                ].map((style) => {
+                  const Icon = style.icon
+                  const isSelected = outputStyle === style.id
+
+                  return (
+                    <button
+                      key={style.id}
+                      onClick={() => setOutputStyle(style.id as any)}
+                      className={`group relative w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 border ${isSelected
+                        ? 'bg-gradient-to-r from-slate-500/5 to-transparent border-slate-700/60 shadow-lg shadow-slate-900/20'
+                        : 'bg-slate-50/50 border-slate-200/60 hover:bg-slate-100/80 hover:border-slate-300/60'
+                        }`}
+                    >
+                      {/* Icon container */}
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${isSelected
+                        ? 'bg-white/80 shadow-inner'
+                        : 'bg-white/80 group-hover:bg-white shadow-sm'
+                        }`}>
+                        <Icon className={`w-4 h-4 transition-colors duration-200 ${isSelected ? 'text-zinc-900' : 'text-slate-600'
+                          }`} />
+                      </div>
+
+                      {/* Text */}
+                      <span className={`text-sm font-medium transition-colors duration-200 ${isSelected ? 'text-zinc-900' : 'text-slate-700'
+                        }`}>
+                        {style.label}
+                      </span>
+
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <div className="ml-auto w-2 h-2 bg-slate-400 rounded-full opacity-60"></div>
+                      )}
+
+                      {/* Subtle glow for selected */}
+                      {isSelected && (
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-slate-500/5 to-transparent pointer-events-none"></div>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </>

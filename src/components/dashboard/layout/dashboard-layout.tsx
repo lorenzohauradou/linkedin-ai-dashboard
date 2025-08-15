@@ -54,7 +54,7 @@ export function DashboardLayout({
 
                     <div className="flex-1 flex flex-col min-h-screen">
                         <div className="flex-1 flex justify-center p-4 md:p-6">
-                            <div className="w-full max-w-2xl">
+                            <div className="w-full max-w-5xl">
                                 {children}
                             </div>
                         </div>

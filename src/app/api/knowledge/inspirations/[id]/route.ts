@@ -3,7 +3,10 @@ import { cookies } from 'next/headers'
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
 
-export async function GET() {
+export async function DELETE(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
     try {
         const cookieStore = await cookies()
         const authToken = cookieStore.get('auth_token')
@@ -15,7 +18,8 @@ export async function GET() {
             )
         }
 
-        const response = await fetch(`${BACKEND_URL}/api/brains`, {
+        const response = await fetch(`${BACKEND_URL}/api/knowledge/inspirations/${params.id}`, {
+            method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${authToken.value}`,
                 'Content-Type': 'application/json'
@@ -28,12 +32,12 @@ export async function GET() {
             return NextResponse.json(data)
         } else {
             return NextResponse.json(
-                { error: 'Failed to get brains' },
+                { error: 'Failed to delete inspiration' },
                 { status: response.status }
             )
         }
     } catch (error) {
-        console.error('Error getting brains:', error)
+        console.error('Error deleting inspiration:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

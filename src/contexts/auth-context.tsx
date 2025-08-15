@@ -13,6 +13,7 @@ interface User {
     profile_picture_url?: string
     created_at: string
     is_active: boolean
+    first_login: boolean
 }
 
 interface AuthContextType {
