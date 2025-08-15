@@ -8,15 +8,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../
 import { Heart, Send, MoreHorizontal, ThumbsUp, Wand2, MessageSquare, Sparkles, Edit } from 'lucide-react'
 import { useAuth } from "../../../contexts/auth-context"
 import { PublishSuccess } from "../../ui/publish-success"
-import AnimatedBackground from "../../ui/animated-background"
 
 interface PostPreviewProps {
   initialContent?: string
   currentAsset?: File | null
   currentAssetId?: string | null
+  previousVersion?: string // Per mostrare diff quando viene da chat
 }
 
-export function PostPreview({ initialContent = "Write your brief idea here...", currentAsset, currentAssetId }: PostPreviewProps) {
+export function PostPreview({ initialContent = "Write your brief idea here...", currentAsset, currentAssetId, previousVersion }: PostPreviewProps) {
   const { user } = useAuth()
   const [postContent, setPostContent] = useState(initialContent)
   const [isTextSelected, setIsTextSelected] = useState(false)
@@ -76,6 +76,27 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
     }
   }, [initialContent])
 
+  // Gestisci diff quando viene da chat con previousVersion
+  useEffect(() => {
+    if (previousVersion && initialContent && previousVersion !== initialContent) {
+      // Calcola diff e mostra le modifiche
+      const wordDiff = calculateWordDiff(previousVersion, initialContent)
+      setChanges({
+        wordDiff,
+        added: [initialContent],
+        removed: [previousVersion],
+        modified: [],
+        fullTextReplacement: initialContent
+      })
+    } else if (previousVersion && initialContent && previousVersion === initialContent) {
+      setChanges({ added: [], removed: [], modified: [], wordDiff: undefined, fullTextReplacement: undefined })
+    } else if (!previousVersion) {
+      setChanges({ added: [], removed: [], modified: [], wordDiff: undefined, fullTextReplacement: undefined })
+      // Forza resize quando si puliscono i diff da chat
+      forceTextareaResize()
+    }
+  }, [previousVersion, initialContent])
+
   // Gestisci asset preview
   useEffect(() => {
     if (currentAsset) {
@@ -88,9 +109,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         reader.readAsDataURL(currentAsset)
       } else if (currentAsset.type.startsWith('video/')) {
         // Per i video usiamo createObjectURL (più efficiente per file grandi)
-        console.log('📹 Creating video preview for:', currentAsset.name, currentAsset.type, currentAsset.size, 'bytes')
         const videoUrl = URL.createObjectURL(currentAsset)
-        console.log('📹 Video URL created:', videoUrl)
         setAssetPreview(videoUrl)
 
         // Cleanup quando il componente viene smontato
@@ -114,6 +133,17 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
     }
   }, [postContent])
 
+  // Funzione helper per forzare il resize della textarea
+  const forceTextareaResize = () => {
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const textarea = textareaRef.current
+        textarea.style.height = 'auto'
+        textarea.style.height = Math.max(60, textarea.scrollHeight) + 'px'
+      }
+    }, 0)
+  }
+
   const handleTextSelection = () => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -130,14 +160,12 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         setIsHighlighted(true)
         setShowVibeMenu(true)
         setChanges({ added: [], removed: [], modified: [] })
-        console.log("✅ Text selected:", selected)
       } else if (selected.length === 0) {
         // Solo se non c'è selezione - chiudi popup
         if (showVibeMenu) {
           setShowVibeMenu(false)
           setIsHighlighted(false)
           setSelectedText("")
-          console.log("❌ Selection cleared")
         }
       }
 
@@ -147,11 +175,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
   const acceptChanges = () => {
     // Se abbiamo fullTextReplacement (miglioramento parziale), usalo direttamente
     if (changes.fullTextReplacement) {
-      console.log("🔄 Using full text replacement:", {
-        before: postContent,
-        after: changes.fullTextReplacement
-      })
-
       setPostContent(changes.fullTextReplacement)
     }
     // Se abbiamo un word diff completo, ricostruisci il testo da quello
@@ -165,12 +188,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         })
         .join('')
 
-      console.log("🔄 Word diff content update:", {
-        before: postContent,
-        after: newContent,
-        wordDiffLength: changes.wordDiff.length
-      })
-
       setPostContent(newContent)
     }
     // Fallback al metodo precedente
@@ -182,56 +199,37 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
       const normalizedRemovedText = removedText.trim()
       const normalizedContent = postContent.trim()
 
-      console.log("🔍 Debug accept changes:", {
-        removedText,
-        addedText,
-        normalizedRemovedText,
-        currentContent: postContent,
-        normalizedContent,
-        removedTextFound: normalizedContent.includes(normalizedRemovedText)
-      })
-
       // Approccio più robusto: trova e sostituisci il testo
       let updatedContent = postContent
 
       // Prova prima con il testo normalizzato
       if (postContent.includes(normalizedRemovedText)) {
         updatedContent = postContent.replace(normalizedRemovedText, addedText)
-        console.log("🔥 Using normalized text replacement")
       }
       // Prova con il testo originale (con newline)
       else if (postContent.includes(removedText)) {
         updatedContent = postContent.replace(removedText, addedText)
-        console.log("🔥 Using original text replacement")
       }
       // Ultimo tentativo: sostituisci tutto il contenuto se è molto simile
       else if (normalizedContent === normalizedRemovedText) {
         updatedContent = addedText
-        console.log("🔥 Full content replacement")
-      } else {
-        console.log("❌ No replacement method worked")
       }
-
-      console.log("🔄 Content update:", {
-        before: postContent,
-        after: updatedContent,
-        changed: postContent !== updatedContent
-      })
 
       setPostContent(updatedContent)
     } else {
-      console.log("❌ No changes to apply:", { changes })
     }
 
     // Reset completo dello stato
     setIsHighlighted(false)
-    setChanges({ added: [], removed: [], modified: [] })
+    setChanges({ added: [], removed: [], modified: [], wordDiff: undefined, fullTextReplacement: undefined })
     setSelectedText("")
     setShowVibeMenu(false)
     setShowCustomInput(false)
     setCustomInstruction("")
 
-    console.log("✅ Changes accepted and state reset")
+    // Forza il resize della textarea dopo accept
+    forceTextareaResize()
+
   }
 
   // Funzione per calcolare diff intelligente parola per parola
@@ -300,8 +298,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
     setIsThinking(true)
 
     try {
-      console.log('🚀 Enhancing selection:', { selectedText, enhanceType, customInstruction })
-
       const response = await fetch('/api/enhance-selection', {
         method: 'POST',
         headers: {
@@ -318,12 +314,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
       const data = await response.json()
 
       if (data.success && data.enhanced_text) {
-        console.log('✅ Enhancement successful:', {
-          original: selectedText,
-          enhanced: data.enhanced_text,
-          originalInContent: postContent.includes(selectedText)
-        })
-
         // Calcola diff intelligente nel contesto del post completo
         const updatedFullText = postContent.replace(selectedText.trim(), data.enhanced_text.trim())
         const wordDiff = calculateWordDiff(postContent, updatedFullText)
@@ -336,9 +326,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
           fullTextReplacement: updatedFullText // Salva il testo completo per l'accept
         })
 
-        console.log('🎯 Word diff calculated:', wordDiff)
       } else {
-        console.error('❌ Enhancement failed:', data.error || 'Unknown error')
         // Fallback semplice
         const normalizedSelectedText = selectedText.trim()
         setChanges({
@@ -348,7 +336,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         })
       }
     } catch (error) {
-      console.error('❌ Error enhancing selection:', error)
       // Fallback semplice
       const normalizedSelectedText = selectedText.trim()
       setChanges({
@@ -368,10 +355,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
 
   const handlePublish = async () => {
     try {
-      console.log("📤 Publishing post to LinkedIn...")
-      console.log("📝 Content:", postContent)
-      console.log("🖼️ Asset ID:", currentAssetId)
-
       // Prepara FormData per l'invio
       const formData = new FormData()
       formData.append('post_content', postContent)
@@ -388,7 +371,6 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
 
       if (response.ok) {
         const result = await response.json()
-        console.log("✅ Post published successfully:", result)
 
         // Mostra modal di successo invece dell'alert
         setPublishResult({
@@ -398,11 +380,9 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         setShowSuccessModal(true)
       } else {
         const error = await response.json()
-        console.error("❌ Publish failed:", error)
         alert(`Errore pubblicazione: ${error.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error("❌ Publish error:", error)
       alert(`Errore pubblicazione: ${error}`)
     }
   }
@@ -503,7 +483,13 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
             variant="outline"
             onClick={() => {
               setIsHighlighted(false)
-              setChanges({ added: [], removed: [], modified: [] })
+              setChanges({ added: [], removed: [], modified: [], wordDiff: undefined, fullTextReplacement: undefined })
+              setSelectedText("")
+              setShowVibeMenu(false)
+              setShowCustomInput(false)
+              setCustomInstruction("")
+              // Forza il resize della textarea dopo reject
+              forceTextareaResize()
             }}
             className="px-4 py-2 rounded-lg border-gray-300 hover:bg-gray-100 flex items-center gap-2"
           >
@@ -581,7 +567,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
             )}
 
             <div className="relative">
-              {(changes.added.length > 0 || changes.removed.length > 0) ? (
+              {(changes.added.length > 0 || changes.removed.length > 0 || changes.wordDiff) ? (
                 // Mostra i cambiamenti AI mantenendo la struttura della textarea
                 <div
                   className="w-full min-h-[60px] text-base text-gray-900 leading-relaxed resize-none bg-transparent border-none focus:outline-none focus:ring-0 p-0"

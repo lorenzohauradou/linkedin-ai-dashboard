@@ -22,9 +22,9 @@ export const usePostGeneration = () => {
   const [currentAssetId, setCurrentAssetId] = useState<string | null>(null)
   const [selectedPostId, setSelectedPostId] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState<boolean>(false)
+  const [previousVersion, setPreviousVersion] = useState<string | null>(null)
 
   const uploadAsset = async (file: File): Promise<string | null> => {
-    console.log('📤 Frontend: Uploading file:', file.name, file.size, 'bytes')
 
     const formData = new FormData()
     formData.append('file', file)
@@ -35,21 +35,18 @@ export const usePostGeneration = () => {
         body: formData
       })
 
-      console.log('📥 Upload response status:', uploadResponse.status)
 
       if (uploadResponse.ok) {
         const uploadData = await uploadResponse.json()
         const assetId = uploadData.asset_info?.asset_id
         setCurrentAssetId(assetId)
-        console.log('✅ Asset uploaded successfully, ID:', assetId)
         return assetId
       } else {
         const errorData = await uploadResponse.json()
-        console.error('❌ Upload failed:', errorData)
         return null
       }
     } catch (error) {
-      console.error('❌ Upload error:', error)
+      console.error('Upload error:', error)
       return null
     }
   }
@@ -76,8 +73,6 @@ export const usePostGeneration = () => {
         generateMultipleAngles: input.generateMultipleAngles
       }
 
-      console.log('🚀 Frontend: Generating posts with payload:', generatePayload)
-
       const endpoint = input.generateMultipleAngles ? '/api/generate-multi-angle' : '/api/generate-post'
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -88,11 +83,9 @@ export const usePostGeneration = () => {
       })
 
       const data = await response.json()
-      console.log('🔍 API Response:', data)
 
       if (input.generateMultipleAngles) {
         if (data.success && data.options && data.options.length > 0) {
-          console.log('✅ Setting post options:', data.options)
           setPostOptions(data.options)
           setSelectedPostId("")
           return { success: true, mode: 'multi-angle' as const, options: data.options }
@@ -105,7 +98,6 @@ export const usePostGeneration = () => {
         }
       } else {
         if (data.success && data.content) {
-          console.log('✅ Setting single post content:', data.content)
           setSelectedPost(data.content)
           setPostOptions([])
           return { success: true, mode: 'single' as const, content: data.content }
@@ -129,11 +121,23 @@ export const usePostGeneration = () => {
 
   const selectOption = useCallback((option: PostOption) => {
     const processedContent = processPostContent(option.content)
+    
+    
+    
+    // Salva la versione precedente se stiamo cambiando post
+    if (selectedPost && selectedPost !== processedContent) {
+      setPreviousVersion(selectedPost)
+    } else if (option.previousVersion) {
+      setPreviousVersion(option.previousVersion)
+    } else {
+      setPreviousVersion(null)
+    }
+    
     setSelectedPost(processedContent)
     setSelectedPostId(option.id)
     setPostOptions([])
     return processedContent
-  }, [])
+  }, [selectedPost])
 
   const resetState = useCallback(() => {
     setPostOptions([])
@@ -142,6 +146,7 @@ export const usePostGeneration = () => {
     setCurrentAssetId(null)
     setSelectedPostId("")
     setIsGenerating(false)
+    setPreviousVersion(null)
   }, [])
 
   return {
@@ -152,6 +157,7 @@ export const usePostGeneration = () => {
     currentAssetId,
     selectedPostId,
     isGenerating,
+    previousVersion,
     
     // Actions
     generatePost,

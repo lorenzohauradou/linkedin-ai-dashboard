@@ -18,6 +18,7 @@ export default function PostGeneratorPageRoute() {
         viewMode,
         hasInteracted,
         expandedPostId,
+        previousVersion,
         handlePostGeneration,
         handleOptionSelect,
         handleResetState,
@@ -42,6 +43,7 @@ export default function PostGeneratorPageRoute() {
                     initialContent={selectedPost}
                     currentAsset={currentAsset}
                     currentAssetId={currentAssetId}
+                    previousVersion={previousVersion || undefined}
                 />
             ) : (
                 <MultiAngleSelector

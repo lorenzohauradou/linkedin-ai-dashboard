@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode, useEffect, useState } from "react"
+import { ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { DashboardSidebar } from "./dashboard-sidebar"
 import { MobileHeader } from "../mobile-header"
@@ -25,19 +25,6 @@ export function DashboardLayout({
         closeSidebar,
         openPostCreator
     } = useResponsiveContext()
-
-
-
-    // Determina se mostrare il right panel basato sulla pagina
-    const showRightPanel = isDesktop && pathname === '/dashboard/post-generator'
-
-    // Debug log per verificare il problema
-    console.log('🔍 Dashboard Layout - showRightPanel:', {
-        isDesktop,
-        isMobile,
-        pathname,
-        showRightPanel
-    })
 
     return (
         <div className="min-h-screen">
@@ -75,9 +62,9 @@ export function DashboardLayout({
                 </SidebarProvider>
 
                 {pathname === '/dashboard/post-generator' && (
-                    <div className={`w-[400px] bg-white border-l border-gray-200 flex-shrink-0 min-h-screen flex-col ${isDesktop ? 'flex' : 'hidden'}`}>
+                    <div className={`w-[400px] bg-white border-l border-gray-200 flex-shrink-0 ${isDesktop ? 'flex' : 'hidden'} flex-col h-screen overflow-hidden`}>
                         {/* right panel renderizzato dal PostGeneratorProvider */}
-                        <div id="post-generator-right-panel" className="flex-1 flex flex-col min-h-0"></div>
+                        <div id="post-generator-right-panel" className="flex-1 flex flex-col h-full overflow-hidden"></div>
                     </div>
                 )}
             </div>

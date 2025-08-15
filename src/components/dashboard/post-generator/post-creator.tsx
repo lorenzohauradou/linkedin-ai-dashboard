@@ -61,12 +61,16 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     type: 'user' | 'ai' | 'thinking',
     content: string,
     timestamp: number,
-    file?: File
+    file?: File,
+    postOptions?: PostOption[], // Per messaggi AI con opzioni multiple
+    isExpanded?: boolean, // Per controllare l'espansione dei messaggi
+    previousVersion?: string // Per tracciare versioni precedenti nei post modificati
   }>>([])
   const [isThinking, setIsThinking] = useState(false)
   const [generatedOptions, setGeneratedOptions] = useState<PostOption[]>([])
   const [showTypewriterOptions, setShowTypewriterOptions] = useState(false)
   const [animatedPosts, setAnimatedPosts] = useState<Set<string>>(new Set())
+  const [expandedChatIndex, setExpandedChatIndex] = useState<number | null>(null)
 
   useEffect(() => {
     fetchBrains()
@@ -104,20 +108,47 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     }
   }, [postOptions, showTypewriterOptions])
 
-  // Gestisci post singoli - aggiungi messaggio AI alla chat quando selectedPost viene aggiornato
+  // Gestisci post - aggiungi messaggio AI alla chat quando selectedPost viene aggiornato
   useEffect(() => {
-    // Solo se è un post singolo (non generateMultipleAngles) e abbiamo selectedPost
-    if (selectedPost && !generateMultipleAngles && isThinking) {
-      setIsThinking(false)  // Ferma il thinking
+    if (selectedPost && selectedPostId) {
+      // Ferma il thinking quando arriva un nuovo post
+      setIsThinking(false)
 
-      // Aggiungi il post singolo alla chat come messaggio AI
-      setChatHistory(prev => [...prev, {
-        type: 'ai',
-        content: selectedPost,
-        timestamp: Date.now()
-      }])
+      // Verifica che non sia già presente nella chat per evitare duplicati
+      const isAlreadyInChat = chatHistory.some(entry =>
+        entry.type === 'ai' && entry.content === selectedPost
+      )
+
+      if (!isAlreadyInChat) {
+        // Se abbiamo una chat attiva, aggiungi alla chat esistente (continue-chat)
+        if (chatHistory.length > 0) {
+          setChatHistory(prev => [...prev, {
+            type: 'ai',
+            content: selectedPost,
+            timestamp: Date.now(),
+            isExpanded: false
+          }])
+        } else {
+          // Altrimenti inizializza la chat (prima selezione da multi-angle)
+          setChatHistory([{
+            type: 'ai',
+            content: selectedPost,
+            timestamp: Date.now(),
+            isExpanded: false
+          }])
+        }
+
+        // Nascondi le opzioni typewriter se presenti
+        setShowTypewriterOptions(false)
+        setGeneratedOptions([])
+      }
     }
-  }, [selectedPost, generateMultipleAngles, isThinking])
+
+    // Post singolo generato (manteniamo la logica originale)
+    if (selectedPost && !generateMultipleAngles && isThinking) {
+      setIsThinking(false)
+    }
+  }, [selectedPost, selectedPostId, generateMultipleAngles, isThinking, chatHistory])
 
   const fetchBrains = async () => {
     try {
@@ -278,7 +309,9 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     }
   }
 
-  const handleSubmit = () => {
+
+
+  const handleSubmit = async () => {
     if (!message.trim() && !uploadedFile && !youtubeUrl.trim()) return
 
     const userMessage = activeMode === 'link' && youtubeUrl ? `${message}\n\nYouTube URL: ${youtubeUrl}` : message
@@ -299,14 +332,56 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
     // Attiva lo stato di loading
     setIsGenerating(true)
 
-    onGenerate({
-      message: userMessage,
-      selectedBrains,
-      activeMode,
-      outputStyle,
-      uploadedFile,
-      generateMultipleAngles
-    })
+    // Se abbiamo una chat history attiva, usa l'endpoint continue-chat
+    if (chatHistory.length > 0) {
+      try {
+        const response = await fetch('/api/continue-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chatHistory: chatHistory,
+            newInstruction: userMessage,
+            selectedBrains,
+            outputStyle,
+            assetId: null // TODO: gestire asset in chat
+          })
+        })
+
+        const data = await response.json()
+
+        if (data.success && data.generated_post) {
+          // seleziona il nuovo post generato
+          // L'useEffect si occuperà di fermarlo thinking e aggiungere alla chat
+          onSelectOption?.({
+            id: `chat-continue-${Date.now()}`,
+            content: data.generated_post,
+            style: 'personal' as const,
+            angle: 'Modified',
+            estimated_engagement: 80
+          })
+
+        } else {
+          alert('Errore nel continuare la chat: ' + (data.error || 'Unknown error'))
+        }
+      } catch (error) {
+        console.error('❌ Error continuing chat:', error)
+        alert('Errore nel continuare la chat: ' + error)
+      } finally {
+        setIsGenerating(false)
+      }
+    } else {
+      // Prima chiamata, usa il flusso normale
+      onGenerate({
+        message: userMessage,
+        selectedBrains,
+        activeMode,
+        outputStyle,
+        uploadedFile,
+        generateMultipleAngles
+      })
+    }
 
     // Clear il messaggio, file e URL dopo invio
     setMessage("")
@@ -339,7 +414,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
 
   return (
     <div
-      className={`h-full flex flex-col w-full bg-white relative ${isDragOver ? 'bg-blue-50' : ''}`}
+      className={`h-full flex flex-col w-full bg-white relative overflow-hidden ${isDragOver ? 'bg-blue-50' : ''}`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -372,7 +447,7 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {/* Mostra i comandi solo quando non ci sono preview attive, non stiamo generando, e non abbiamo una chat attiva */}
         {postOptions.length === 0 && !isGenerating && chatHistory.length === 0 && !showTypewriterOptions && (
           <>
@@ -554,17 +629,81 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                   </span>
                 </div>
                 <div className="flex-1">
-                  <div className={`rounded-2xl p-4 text-sm ${entry.type === 'user'
-                    ? 'bg-blue-500 text-white rounded-tr-md'
-                    : 'bg-gray-100 text-gray-800 rounded-tl-md'
-                    }`}>
-                    {entry.content}
-                    {entry.file && (
-                      <div className="mt-2 p-2 bg-white/20 rounded-md text-xs">
-                        📎 {entry.file.name}
+                  {entry.type === 'ai' && expandedChatIndex !== index ? (
+                    // Preview compatta per messaggi AI
+                    <div
+                      className="bg-gray-100 rounded-2xl rounded-tl-md p-3 text-sm text-gray-800 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => setExpandedChatIndex(index)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-gray-500 font-medium">Generated post preview</span>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          {entry.previousVersion && (
+                            <span className="bg-green-100 text-green-600 px-1.5 py-0.5 rounded text-xs">Modified</span>
+                          )}
+                          <span>Click to expand</span>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      <div className="text-gray-700 leading-relaxed text-xs">
+                        {entry.content.length > 80
+                          ? entry.content.substring(0, 80) + "..."
+                          : entry.content
+                        }
+                      </div>
+                    </div>
+                  ) : entry.type === 'ai' && expandedChatIndex === index ? (
+                    // Messaggio AI espanso
+                    <div className="bg-gray-100 rounded-2xl rounded-tl-md p-4 text-sm text-gray-800">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-gray-500 font-medium">Generated post</span>
+                        <button
+                          onClick={() => setExpandedChatIndex(null)}
+                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="text-gray-800 leading-relaxed whitespace-pre-line">
+                        {entry.content}
+                      </div>
+                      <div className="flex items-center gap-2 mt-4">
+                        <button
+                          onClick={() => {
+                            // Usa questo post e triggera il diff nel preview
+                            onSelectOption?.({
+                              id: `chat-${index}`,
+                              content: entry.content,
+                              style: 'personal' as const,
+                              angle: 'Generated',
+                              estimated_engagement: 80,
+                              previousVersion: entry.previousVersion
+                            })
+                          }}
+                          className="bg-blue-500 text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-blue-600 transition-colors"
+                        >
+                          Use this post
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Messaggio utente normale
+                    <div className={`rounded-2xl p-4 text-sm ${entry.type === 'user'
+                      ? 'bg-blue-500 text-white rounded-tr-md'
+                      : 'bg-gray-100 text-gray-800 rounded-tl-md'
+                      }`}>
+                      {entry.content}
+                      {entry.file && (
+                        <div className="mt-2 p-2 bg-white/20 rounded-md text-xs">
+                          📎 {entry.file.name}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -790,28 +929,18 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                 )
               })}
 
-            {/* Chat input quando un post è selezionato */}
-            {usedPostId && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Give me instructions to improve this post..."
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-3 md:py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 touch-manipulation"
-                  />
-                  <button className="bg-blue-500 text-white p-3 md:p-2 rounded-full hover:bg-blue-600 transition-colors touch-manipulation">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
+
           </div>
         ) : null}
 
+
+      </div>
+
+      {/* Input area fissa */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-100">
+        {/* File preview quando presente */}
         {uploadedFile && (
-          <div className="p-4">
+          <div className="p-4 border-b border-gray-50">
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
               <div className="flex items-center gap-3">
                 <div className="relative flex-shrink-0">
@@ -865,6 +994,162 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
             </div>
           </div>
         )}
+
+        {/* Input principale quando non c'è chat attiva */}
+        {!usedPostId && chatHistory.length === 0 && (
+          <div className="p-4">
+            <div className="space-y-3">
+              <div className="relative">
+                <Textarea
+                  placeholder=""
+                  value={message}
+                  className="min-h-[80px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-base leading-relaxed touch-manipulation"
+                  onChange={(e) => {
+                    setMessage(e.target.value)
+                    // Attiva l'interazione quando l'utente inizia a scrivere
+                    if (e.target.value.trim().length > 0 && onInteraction) {
+                      onInteraction()
+                    }
+                  }}
+                  onFocus={() => {
+                    if (onInteraction) {
+                      onInteraction()
+                    }
+                  }}
+                  rows={3}
+                />
+                {message.length === 0 && (
+                  <div className="absolute inset-0 pointer-events-none p-3 text-gray-400">
+                    <TypewriterPlaceholder
+                      phrases={[
+                        "Share a breakthrough moment in your startup journey...",
+                        "Upload a screenshot of your MRR growth...",
+                        "Share insights about your tech stack...",
+                        "Tell us about a challenge you overcame...",
+                        "Share your thoughts on AI and entrepreneurship...",
+                        "Upload a video demo of your product...",
+                        "Share your team's success story...",
+                        "Post about your latest feature launch..."
+                      ]}
+                      typingSpeed={40}
+                      pauseDuration={3000}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*,.mp4,.mov,.avi,.mkv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      fileInputRef.current?.click()
+                      if (onInteraction) onInteraction()
+                    }}
+                    className="h-10 w-10 md:h-8 md:w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md touch-manipulation"
+                  >
+                    <Image className="w-5 h-5 md:w-4 md:h-4" />
+                  </Button>
+                  <span className="text-xs text-gray-400">{message.length}/2000</span>
+                </div>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    id="multiple-angles"
+                    checked={generateMultipleAngles}
+                    onChange={(e) => setGenerateMultipleAngles(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <label htmlFor="multiple-angles" className="text-sm text-gray-700 font-medium">
+                    Multiple Angles
+                  </label>
+                </div>
+
+                <Button
+                  size="sm"
+                  onClick={handleSubmit}
+                  className={`rounded-xl h-10 md:h-9 px-4 transition-all duration-200 touch-manipulation ${(message.trim() || uploadedFile)
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  disabled={!message.trim() && !uploadedFile}
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Generate
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Input quando abbiamo una chat attiva ma nessun post selezionato */}
+        {chatHistory.length > 0 && !usedPostId && !isThinking && !showTypewriterOptions && (
+          <div className="p-4">
+            <div className="space-y-3">
+              <div className="relative">
+                <Textarea
+                  placeholder="Give me instructions to improve this post..."
+                  value={message}
+                  className="min-h-[60px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-base leading-relaxed"
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*,.mp4,.mov,.avi,.mkv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+                    disabled={isGenerating}
+                  >
+                    <Image className="w-4 h-4" />
+                  </Button>
+                  <span className="text-xs text-gray-400">Continue the conversation</span>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSubmit}
+                  className={`rounded-xl h-9 px-4 transition-all duration-200 ${message.trim() || uploadedFile
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                  disabled={(!message.trim() && !uploadedFile) || isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      Thinking...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      Send
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Drag & Drop Overlay */}
@@ -882,147 +1167,10 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         </div>
       )}
 
-      {!usedPostId && chatHistory.length === 0 && (
-        <div className="p-4 bg-white border-t border-gray-100">
-          <div className="space-y-3">
-            <div className="relative">
-              <Textarea
-                placeholder=""
-                value={message}
-                className="min-h-[80px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-base leading-relaxed touch-manipulation"
-                onChange={(e) => {
-                  setMessage(e.target.value)
-                  // Attiva l'interazione quando l'utente inizia a scrivere
-                  if (e.target.value.trim().length > 0 && onInteraction) {
-                    onInteraction()
-                  }
-                }}
-                onFocus={() => {
-                  if (onInteraction) {
-                    onInteraction()
-                  }
-                }}
-                rows={3}
-              />
-              {message.length === 0 && (
-                <div className="absolute inset-0 pointer-events-none p-3 text-gray-400">
-                  <TypewriterPlaceholder
-                    phrases={[
-                      "Share a breakthrough moment in your startup journey...",
-                      "Upload a screenshot of your MRR growth...",
-                      "Share insights about your tech stack...",
-                      "Tell us about a challenge you overcame...",
-                      "Share your thoughts on AI and entrepreneurship...",
-                      "Upload a video demo of your product...",
-                      "Share your team's success story...",
-                      "Post about your latest feature launch..."
-                    ]}
-                    typingSpeed={40}
-                    pauseDuration={3000}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*,.mp4,.mov,.avi,.mkv"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    fileInputRef.current?.click()
-                    if (onInteraction) onInteraction()
-                  }}
-                  className="h-10 w-10 md:h-8 md:w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md touch-manipulation"
-                >
-                  <Image className="w-5 h-5 md:w-4 md:h-4" />
-                </Button>
-                <span className="text-xs text-gray-400">{message.length}/2000</span>
-              </div>
 
-              <div className="flex items-center gap-2 mb-3">
-                <input
-                  type="checkbox"
-                  id="multiple-angles"
-                  checked={generateMultipleAngles}
-                  onChange={(e) => setGenerateMultipleAngles(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <label htmlFor="multiple-angles" className="text-sm text-gray-700 font-medium">
-                  Multiple Angles
-                </label>
-              </div>
 
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                className={`rounded-xl h-10 md:h-9 px-4 transition-all duration-200 touch-manipulation ${(message.trim() || uploadedFile)
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
-                disabled={!message.trim() && !uploadedFile}
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Chat input quando abbiamo una chat attiva ma nessun post selezionato */}
-      {chatHistory.length > 0 && !usedPostId && !isThinking && !showTypewriterOptions && (
-        <div className="p-4 bg-white border-t border-gray-100">
-          <div className="space-y-3">
-            <div className="relative">
-              <Textarea
-                placeholder="Continue the conversation..."
-                value={message}
-                className="min-h-[60px] max-h-32 resize-none border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 py-3 px-4 text-base leading-relaxed"
-                onChange={(e) => setMessage(e.target.value)}
-                rows={2}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*,.mp4,.mov,.avi,.mkv"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
-                >
-                  <Image className="w-4 h-4" />
-                </Button>
-              </div>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                className={`rounded-xl h-9 px-4 transition-all duration-200 ${message.trim() || uploadedFile
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
-                disabled={!message.trim() && !uploadedFile}
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Send
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
+

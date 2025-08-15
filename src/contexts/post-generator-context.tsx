@@ -16,6 +16,7 @@ interface PostGeneratorContextType {
     viewMode: any
     hasInteracted: boolean
     expandedPostId: string | null
+    previousVersion: string | null
 
     // Actions
     handlePostGeneration: (input: any) => Promise<void>
@@ -48,6 +49,7 @@ export function PostGeneratorProvider({ children }: PostGeneratorProviderProps) 
         currentAssetId,
         selectedPostId,
         isGenerating,
+        previousVersion,
         generatePost,
         selectOption,
         resetState,
@@ -110,6 +112,7 @@ export function PostGeneratorProvider({ children }: PostGeneratorProviderProps) 
         viewMode,
         hasInteracted,
         expandedPostId,
+        previousVersion,
 
         // Actions
         handlePostGeneration,

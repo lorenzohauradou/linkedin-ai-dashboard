@@ -6,6 +6,7 @@ export interface PostOption {
   content: string
   style: PostStyle
   estimated_engagement: number
+  previousVersion?: string // Per tracciare modifiche
 }
 
 export type OutputStyle = 'short' | 'structured' | 'story'
