@@ -3,9 +3,8 @@ import { cookies } from 'next/headers'
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
 
-// Configurazione per aumentare il limite del body size
-export const runtime = 'nodejs'
-export const maxDuration = 60
+// Usa Edge Runtime per limiti più alti
+export const runtime = 'edge'
 
 export async function POST(request: NextRequest) {
     try {
