@@ -1,10 +1,7 @@
 import type { Metadata } from 'next'
 import { ReactNode } from "react"
-import { DashboardLayout } from "../../components/dashboard/layout/dashboard-layout"
-import AnimatedBackground from "@/src/components/ui/animated-background"
-import { ResponsiveProvider } from "../../contexts/responsive-context"
-import { AuthGuard } from "../../components/auth/auth-guard"
 import { pageConfigs, seoConfig } from '../../lib/seo-config'
+import { DashboardLayoutClient } from "../../components/dashboard/dashboard-layout-client"
 
 export const metadata: Metadata = {
     title: pageConfigs.dashboard.title,
@@ -33,25 +30,6 @@ export const metadata: Metadata = {
 
 interface DashboardLayoutProps {
     children: ReactNode
-}
-
-"use client"
-
-function DashboardLayoutClient({ children }: DashboardLayoutProps) {
-    return (
-        <AuthGuard>
-            <ResponsiveProvider>
-                <div className="flex flex-col min-h-screen">
-                    <AnimatedBackground />
-                    <div className="z-10">
-                        <DashboardLayout>
-                            {children}
-                        </DashboardLayout>
-                    </div>
-                </div>
-            </ResponsiveProvider>
-        </AuthGuard>
-    )
 }
 
 export default function Layout({ children }: DashboardLayoutProps) {
