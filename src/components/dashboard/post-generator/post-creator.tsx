@@ -1162,6 +1162,11 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
         {/* Input principale quando non c'è chat attiva */}
         {!usedPostId && chatHistory.length === 0 && (
           <div className="p-4">
+            <div className="text-center mb-3">
+              <p className="text-xs text-gray-500 italic">
+                * Write in any language you prefer
+              </p>
+            </div>
             <div className="space-y-3">
               <div className="relative">
                 <Textarea
