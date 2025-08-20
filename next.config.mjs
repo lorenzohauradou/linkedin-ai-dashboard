@@ -14,13 +14,6 @@ const nextConfig = {
       bodySizeLimit: '50mb', // Aumentato per video più grandi
     },
   },
-  // Configurazione per API routes
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-    responseLimit: false,
-  },
 }
 
 export default nextConfig
