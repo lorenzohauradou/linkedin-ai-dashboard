@@ -25,6 +25,7 @@ interface PostGeneratorContextType {
     handleInteraction: () => void
     setIsGenerating: (generating: boolean) => void
     setExpandedPostId: (id: string | null) => void
+    handleEditPost: (input: { message: string, uploadedFile?: File | null }) => void
 }
 
 const PostGeneratorContext = createContext<PostGeneratorContextType | undefined>(undefined)
@@ -53,7 +54,9 @@ export function PostGeneratorProvider({ children }: PostGeneratorProviderProps) 
         generatePost,
         selectOption,
         resetState,
-        setIsGenerating
+        setIsGenerating,
+        setSelectedPost,
+        setCurrentAsset
     } = usePostGeneration()
 
     const [expandedPostId, setExpandedPostId] = useState<string | null>(null)
@@ -101,6 +104,28 @@ export function PostGeneratorProvider({ children }: PostGeneratorProviderProps) 
         setExpandedPostId(null)
     }
 
+    const handleEditPost = (input: { message: string, uploadedFile?: File | null }) => {
+        handleInteraction()
+
+        // Mostra direttamente il contenuto dell'utente nella preview
+        setSelectedPost(input.message)
+
+        // Se c'è un file, impostalo come asset corrente
+        if (input.uploadedFile) {
+            setCurrentAsset(input.uploadedFile)
+        } else {
+            setCurrentAsset(null)
+        }
+
+        // Naviga alla preview
+        navigateToPreview()
+
+        // Chiudi il mobile post creator se aperto
+        if (isMobile && isPostCreatorOpen) {
+            closePostCreator()
+        }
+    }
+
     const contextValue: PostGeneratorContextType = {
         // State
         postOptions,
@@ -120,7 +145,8 @@ export function PostGeneratorProvider({ children }: PostGeneratorProviderProps) 
         handleResetState,
         handleInteraction,
         setIsGenerating,
-        setExpandedPostId
+        setExpandedPostId,
+        handleEditPost
     }
 
     return (

@@ -20,6 +20,7 @@ interface MobilePostCreatorProps {
     onGeneratingChange?: (generating: boolean) => void
     onResetState?: () => void
     viewMode?: 'preview' | 'multi-angle' | 'welcome'
+    onEditPost?: (input: { message: string, uploadedFile?: File | null }) => void
 }
 
 export function MobilePostCreator({
@@ -34,7 +35,8 @@ export function MobilePostCreator({
     onInteraction,
     onGeneratingChange,
     onResetState,
-    viewMode
+    viewMode,
+    onEditPost
 }: MobilePostCreatorProps) {
     // Previeni scroll del body quando è aperto (ma permetti scroll interno)
     useEffect(() => {
@@ -103,6 +105,7 @@ export function MobilePostCreator({
                             onInteraction={onInteraction}
                             onGeneratingChange={onGeneratingChange}
                             onResetState={onResetState}
+                            onEditPost={onEditPost}
                         />
                         {isGenerating && (
                             <div className="absolute inset-0 bg-white/98 backdrop-blur-sm flex items-center justify-center z-50 rounded-3xl">

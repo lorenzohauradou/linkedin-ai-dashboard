@@ -29,7 +29,8 @@ export default function PostGeneratorPageRoute() {
         handleOptionSelect,
         handleResetState,
         handleInteraction,
-        setIsGenerating
+        setIsGenerating,
+        handleEditPost
     } = usePostGeneratorContext()
 
     const {
@@ -94,6 +95,7 @@ export default function PostGeneratorPageRoute() {
                 onGeneratingChange={setIsGenerating}
                 onResetState={handleResetState}
                 viewMode={viewMode}
+                onEditPost={handleEditPost}
             />
 
             {/* Onboarding Popup */}

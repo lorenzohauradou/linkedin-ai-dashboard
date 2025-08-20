@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "../../ui/button"
 import { Textarea } from "../../ui/textarea"
-import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, ChevronDown } from 'lucide-react'
+import { Plus, Image, Youtube, MessageSquare, FileText, Wand2, Brain, Zap, ChevronDown, Edit } from 'lucide-react'
 import { TypewriterPlaceholder } from "../../ui/typewriter-placeholder"
 import { TypewriterText } from "../../ui/typewriter-text"
 
@@ -36,9 +36,13 @@ interface PostCreatorProps {
   onGeneratingChange?: (generating: boolean) => void
   onResetState?: () => void
   onExpandedPostChange?: (postId: string | null) => void
+  onEditPost?: (input: {
+    message: string
+    uploadedFile?: File | null
+  }) => void
 }
 
-export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, selectedPost, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, onExpandedPostChange }: PostCreatorProps) {
+export function PostCreator({ onGenerate, postOptions = [], onSelectOption, selectedPostId, selectedPost, onInteraction, isGenerating: externalIsGenerating, onGeneratingChange, onResetState, onExpandedPostChange, onEditPost }: PostCreatorProps) {
   const router = useRouter()
   const [message, setMessage] = useState("")
   const [brains, setBrains] = useState<Brain[]>([])
@@ -1233,18 +1237,65 @@ export function PostCreator({ onGenerate, postOptions = [], onSelectOption, sele
                   </label>
                 </div>
 
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  className={`rounded-xl h-10 md:h-9 px-4 transition-all duration-200 touch-manipulation ${(message.trim() || uploadedFile)
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                  disabled={!message.trim() && !uploadedFile}
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Generate
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleSubmit}
+                    className={`group relative rounded-xl h-10 md:h-9 px-4 transition-all duration-200 touch-manipulation border ${(message.trim() || uploadedFile)
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-900/25 hover:shadow-xl hover:shadow-blue-900/30 border-blue-600'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                      }`}
+                    disabled={!message.trim() && !uploadedFile}
+                  >
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Generate
+                    {/* Subtle inner glow for active state */}
+                    {(message.trim() || uploadedFile) && (
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-white/10 to-transparent pointer-events-none"></div>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (onEditPost) {
+                        const userMessage = activeMode === 'link' && youtubeUrl ? `${message}\n\nYouTube URL: ${youtubeUrl}` : message
+
+                        // Aggiungi messaggio utente alla chat (come fa Generate)
+                        setChatHistory(prev => [...prev, {
+                          type: 'user',
+                          content: userMessage,
+                          timestamp: Date.now(),
+                          file: uploadedFile || undefined
+                        }])
+
+                        onEditPost({
+                          message: userMessage,
+                          uploadedFile
+                        })
+
+                        // Clear il messaggio, file e URL dopo invio (come fa Generate)
+                        setMessage("")
+                        removeFile()
+                        setYoutubeUrl("")
+                        setActiveMode('text')
+
+                        if (onInteraction) onInteraction()
+                      }
+                    }}
+                    className={`group relative rounded-xl h-10 md:h-9 px-4 transition-all duration-200 touch-manipulation border ${(message.trim() || uploadedFile)
+                      ? 'bg-slate-50/50 hover:bg-slate-100/80 border-slate-700/60 shadow-lg shadow-slate-900/20 text-slate-700 hover:border-slate-300/60'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                      }`}
+                    disabled={!message.trim() && !uploadedFile}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Post
+                    {/* Subtle glow for active state */}
+                    {(message.trim() || uploadedFile) && (
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-slate-500/8 to-transparent pointer-events-none"></div>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

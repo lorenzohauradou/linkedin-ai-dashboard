@@ -14,7 +14,8 @@ export function PostGeneratorRightPanel() {
         handleResetState,
         handleInteraction,
         setIsGenerating,
-        setExpandedPostId
+        setExpandedPostId,
+        handleEditPost
     } = usePostGeneratorContext()
 
     return (
@@ -29,6 +30,7 @@ export function PostGeneratorRightPanel() {
             onGeneratingChange={setIsGenerating}
             onResetState={handleResetState}
             onExpandedPostChange={setExpandedPostId}
+            onEditPost={handleEditPost}
         />
     )
 }

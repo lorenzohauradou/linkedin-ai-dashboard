@@ -168,6 +168,7 @@ export const usePostGeneration = () => {
     setPostOptions,
     setSelectedPost,
     setSelectedPostId,
-    setIsGenerating
+    setIsGenerating,
+    setCurrentAsset
   }
 }
