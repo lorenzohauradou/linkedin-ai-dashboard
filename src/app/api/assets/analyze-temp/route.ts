@@ -3,6 +3,10 @@ import { cookies } from 'next/headers'
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
 
+// Configurazione per aumentare il limite del body size
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
 export async function POST(request: NextRequest) {
     try {
         const cookieStore = await cookies()
