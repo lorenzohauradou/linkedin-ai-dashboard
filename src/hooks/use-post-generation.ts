@@ -25,28 +25,28 @@ export const usePostGeneration = () => {
   const [previousVersion, setPreviousVersion] = useState<string | null>(null)
 
   const uploadAsset = async (file: File): Promise<string | null> => {
-
     const formData = new FormData()
     formData.append('file', file)
 
     try {
-      const uploadResponse = await fetch('/api/assets/upload', {
+      // endpoint per analisi asset temporanea
+      const uploadResponse = await fetch('/api/assets/analyze-temp', {
         method: 'POST',
         body: formData
       })
 
-
       if (uploadResponse.ok) {
         const uploadData = await uploadResponse.json()
-        const assetId = uploadData.asset_info?.asset_id
-        setCurrentAssetId(assetId)
-        return assetId
+        const tempId = uploadData.temp_analysis?.temp_id
+        setCurrentAssetId(tempId)
+        return tempId
       } else {
         const errorData = await uploadResponse.json()
+        console.error('Temporary analysis failed:', errorData)
         return null
       }
     } catch (error) {
-      console.error('Upload error:', error)
+      console.error('Temporary analysis error:', error)
       return null
     }
   }
