@@ -25,28 +25,59 @@ export const usePostGeneration = () => {
   const [previousVersion, setPreviousVersion] = useState<string | null>(null)
 
   const uploadAsset = async (file: File): Promise<string | null> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
     try {
-      // endpoint per analisi asset temporanea
-      const uploadResponse = await fetch('/api/assets/analyze-temp', {
+      // Step 1: Ottieni presigned URL per upload diretto
+      const urlFormData = new FormData()
+      urlFormData.append('filename', file.name)
+      
+      const urlResponse = await fetch('/api/assets/get-upload-url', {
         method: 'POST',
-        body: formData
+        body: urlFormData
       })
 
-      if (uploadResponse.ok) {
-        const uploadData = await uploadResponse.json()
-        const tempId = uploadData.temp_analysis?.temp_id
+      if (!urlResponse.ok) {
+        console.error('Failed to get upload URL')
+        return null
+      }
+
+      const urlData = await urlResponse.json()
+      const { upload_url, file_path } = urlData.upload_info
+
+      // Step 2: Upload diretto a Supabase Storage
+      const uploadResponse = await fetch(upload_url, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type
+        }
+      })
+
+      if (!uploadResponse.ok) {
+        console.error('Failed to upload file to storage')
+        return null
+      }
+
+      // Step 3: Notifica al backend per analisi
+      const analyzeFormData = new FormData()
+      analyzeFormData.append('file_path', file_path)
+      analyzeFormData.append('original_filename', file.name)
+
+      const analyzeResponse = await fetch('/api/assets/analyze-uploaded', {
+        method: 'POST',
+        body: analyzeFormData
+      })
+
+      if (analyzeResponse.ok) {
+        const analyzeData = await analyzeResponse.json()
+        const tempId = analyzeData.temp_analysis?.temp_id
         setCurrentAssetId(tempId)
         return tempId
       } else {
-        const errorData = await uploadResponse.json()
-        console.error('Temporary analysis failed:', errorData)
+        console.error('Failed to analyze uploaded file')
         return null
       }
     } catch (error) {
-      console.error('Temporary analysis error:', error)
+      console.error('Upload error:', error)
       return null
     }
   }
