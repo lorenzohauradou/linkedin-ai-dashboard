@@ -3,8 +3,9 @@ import { cookies } from 'next/headers'
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000"
 
-// Usa Edge Runtime per limiti più alti
-export const runtime = 'edge'
+// Configurazione per Vercel Pro
+export const runtime = 'nodejs'
+export const maxDuration = 300 // 5 minuti con piano Pro
 
 export async function POST(request: NextRequest) {
     try {
