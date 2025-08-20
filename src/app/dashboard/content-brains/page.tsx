@@ -24,6 +24,7 @@ export default function ContentBrainsPage() {
             const response = await fetch('/api/knowledge/summary')
             if (response.ok) {
                 const data = await response.json()
+                console.log('📊 Knowledge Summary:', data.summary)
                 setKnowledgeSummary(data.summary)
             }
         } catch (error) {

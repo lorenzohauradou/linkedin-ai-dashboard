@@ -232,60 +232,88 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
 
   }
 
-  // Funzione per calcolare diff intelligente parola per parola
+  // Algoritmo di diff preciso - identifica solo le differenze minime
   const calculateWordDiff = (original: string, enhanced: string) => {
-    const originalWords = original.split(/(\s+)/)
-    const enhancedWords = enhanced.split(/(\s+)/)
-
     const changes: { type: 'unchanged' | 'removed' | 'added', text: string }[] = []
 
-    let i = 0, j = 0
+    // Usa algoritmo Myers per diff preciso carattere per carattere
+    const diff = calculateMyersDiff(original, enhanced)
 
-    while (i < originalWords.length || j < enhancedWords.length) {
-      if (i >= originalWords.length) {
-        // Parole aggiunte alla fine
-        changes.push({ type: 'added', text: enhancedWords[j] })
-        j++
-      } else if (j >= enhancedWords.length) {
-        // Parole rimosse dalla fine
-        changes.push({ type: 'removed', text: originalWords[i] })
-        i++
-      } else if (originalWords[i] === enhancedWords[j]) {
-        // Parole identiche
-        changes.push({ type: 'unchanged', text: originalWords[i] })
-        i++
-        j++
-      } else {
-        // Cerca se la parola originale esiste più avanti nel testo enhanced
-        const foundInEnhanced = enhancedWords.findIndex((word, idx) => idx > j && word === originalWords[i])
+    return diff
+  }
 
-        if (foundInEnhanced !== -1) {
-          // Aggiungi le parole prima della corrispondenza come "aggiunte"
-          for (let k = j; k < foundInEnhanced; k++) {
-            changes.push({ type: 'added', text: enhancedWords[k] })
-          }
-          j = foundInEnhanced + 1
-          changes.push({ type: 'unchanged', text: originalWords[i] })
-          i++
+  // Algoritmo di diff parola per parola per sostituzioni leggibili
+  const calculateMyersDiff = (original: string, enhanced: string) => {
+    const changes: { type: 'unchanged' | 'removed' | 'added', text: string }[] = []
+
+    // Dividi in token (parole, spazi, punteggiatura) per diff leggibile
+    const originalTokens = original.split(/(\s+|[^\w\s]+)/g).filter(Boolean)
+    const enhancedTokens = enhanced.split(/(\s+|[^\w\s]+)/g).filter(Boolean)
+
+    // Usa programmazione dinamica per trovare la sequenza di modifiche minima
+    const dp: number[][] = Array(originalTokens.length + 1)
+      .fill(null)
+      .map(() => Array(enhancedTokens.length + 1).fill(0))
+
+    // Inizializza la matrice
+    for (let i = 0; i <= originalTokens.length; i++) dp[i][0] = i
+    for (let j = 0; j <= enhancedTokens.length; j++) dp[0][j] = j
+
+    // Riempi la matrice
+    for (let i = 1; i <= originalTokens.length; i++) {
+      for (let j = 1; j <= enhancedTokens.length; j++) {
+        if (originalTokens[i - 1] === enhancedTokens[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1]
         } else {
-          // Cerca se la parola enhanced esiste più avanti nel testo originale
-          const foundInOriginal = originalWords.findIndex((word, idx) => idx > i && word === enhancedWords[j])
-
-          if (foundInOriginal !== -1) {
-            // Rimuovi le parole prima della corrispondenza
-            for (let k = i; k < foundInOriginal; k++) {
-              changes.push({ type: 'removed', text: originalWords[k] })
-            }
-            i = foundInOriginal
-          } else {
-            // Sostituzione semplice
-            changes.push({ type: 'removed', text: originalWords[i] })
-            changes.push({ type: 'added', text: enhancedWords[j] })
-            i++
-            j++
-          }
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,     // deletion
+            dp[i][j - 1] + 1,     // insertion
+            dp[i - 1][j - 1] + 1  // substitution
+          )
         }
       }
+    }
+
+    // Ricostruisci il percorso per ottenere le operazioni
+    let i = originalTokens.length
+    let j = enhancedTokens.length
+    const operations: { type: 'unchanged' | 'removed' | 'added', token: string }[] = []
+
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && originalTokens[i - 1] === enhancedTokens[j - 1]) {
+        operations.unshift({ type: 'unchanged', token: originalTokens[i - 1] })
+        i--
+        j--
+      } else if (i > 0 && (j === 0 || dp[i - 1][j] <= dp[i][j - 1])) {
+        operations.unshift({ type: 'removed', token: originalTokens[i - 1] })
+        i--
+      } else if (j > 0) {
+        operations.unshift({ type: 'added', token: enhancedTokens[j - 1] })
+        j--
+      }
+    }
+
+    // Raggruppa token consecutivi dello stesso tipo per rendering più pulito
+    if (operations.length === 0) return changes
+
+    let currentType = operations[0].type
+    let currentText = ''
+
+    for (const op of operations) {
+      if (op.type === currentType) {
+        currentText += op.token
+      } else {
+        if (currentText) {
+          changes.push({ type: currentType, text: currentText })
+        }
+        currentType = op.type
+        currentText = op.token
+      }
+    }
+
+    // Aggiungi l'ultimo gruppo
+    if (currentText) {
+      changes.push({ type: currentType, text: currentText })
     }
 
     return changes
@@ -401,12 +429,12 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
   }
 
   const renderChangesView = () => {
-    // Rendering delle modifiche preservando la formattazione originale
+    // Rendering compatto ed elegante delle modifiche
     const renderTextWithChanges = () => {
-      // Se abbiamo un word diff, usalo per rendering inline preservando spazi
+      // Se abbiamo un word diff, usalo per rendering inline compatto
       if (changes.wordDiff && changes.wordDiff.length > 0) {
         return (
-          <>
+          <div className="space-y-0 leading-relaxed">
             {changes.wordDiff.map((wordChange, index) => {
               if (wordChange.type === 'unchanged') {
                 return <span key={index} className="text-gray-900">{wordChange.text}</span>
@@ -414,7 +442,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
                 return (
                   <span
                     key={index}
-                    className="bg-red-100 text-red-800 px-1 rounded-sm line-through decoration-red-500 decoration-2"
+                    className="bg-red-100 text-red-800 line-through decoration-red-500 decoration-2 px-1 rounded-md mr-1"
                   >
                     {wordChange.text}
                   </span>
@@ -423,7 +451,7 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
                 return (
                   <span
                     key={index}
-                    className="bg-green-100 text-green-800 px-1 rounded-sm font-medium"
+                    className="bg-green-100 text-green-800 px-1 rounded-md font-medium"
                   >
                     {wordChange.text}
                   </span>
@@ -431,11 +459,11 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
               }
               return null
             })}
-          </>
+          </div>
         )
       }
 
-      // Rendering pulito per sostituzioni semplici preservando newline e spazi
+      // Rendering pulito per sostituzioni semplici
       if (changes.removed.length > 0 && changes.added.length > 0) {
         const removedText = changes.removed[0]
         const addedText = changes.added[0]
@@ -446,34 +474,34 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
         const afterText = displayText.substring(displayText.indexOf(removedText) + removedText.length)
 
         return (
-          <>
+          <div className="space-y-0 leading-relaxed">
             <span className="text-gray-900">{beforeText}</span>
-            <span className="bg-red-100 text-red-800 px-1 rounded-sm line-through decoration-red-500 decoration-2">
+            <span className="bg-red-100 text-red-800 line-through decoration-red-500 decoration-2 px-1 rounded-md mr-1">
               {removedText}
             </span>
-            <span className="bg-green-100 text-green-800 px-1 rounded-sm font-medium">
+            <span className="bg-green-100 text-green-800 px-1 rounded-md font-medium">
               {addedText}
             </span>
             <span className="text-gray-900">{afterText}</span>
-          </>
+          </div>
         )
       }
 
-      return <span className="text-gray-900">{postContent}</span>
+      return <div className="text-gray-900 leading-relaxed">{postContent}</div>
     }
 
     return (
-      <>
+      <div className="relative">
         {renderTextWithChanges()}
 
-        {/* Bottoni di controllo posizionati sotto il testo */}
-        <div className="flex gap-3 pt-4 mt-4 border-t border-gray-100">
+        {/* Bottoni di controllo compatti e eleganti */}
+        <div className="flex gap-2 pt-3 mt-3 border-t border-gray-100">
           <Button
             size="sm"
             onClick={acceptChanges}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-sm flex items-center gap-2"
+            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 shadow-sm"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             Accept
@@ -488,18 +516,17 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
               setShowVibeMenu(false)
               setShowCustomInput(false)
               setCustomInstruction("")
-              // Forza il resize della textarea dopo reject
               forceTextareaResize()
             }}
-            className="px-4 py-2 rounded-lg border-gray-300 hover:bg-gray-100 flex items-center gap-2"
+            className="px-3 py-1.5 rounded-md text-xs font-medium border-gray-200 hover:bg-gray-50 flex items-center gap-1.5"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
             Reject
           </Button>
         </div>
-      </>
+      </div>
     )
   }
 
@@ -568,14 +595,13 @@ export function PostPreview({ initialContent = "Write your brief idea here...", 
 
             <div className="relative">
               {(changes.added.length > 0 || changes.removed.length > 0 || changes.wordDiff) ? (
-                // Mostra i cambiamenti AI mantenendo la struttura della textarea
+                // Mostra i cambiamenti AI in modo compatto ed elegante
                 <div
-                  className="w-full min-h-[60px] text-base text-gray-900 leading-relaxed resize-none bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                  className="w-full min-h-[60px] text-base text-gray-900 leading-relaxed bg-gray-50/30 border border-gray-200 rounded-lg p-3"
                   style={{
                     fontFamily: 'inherit',
                     fontSize: 'inherit',
-                    lineHeight: 'inherit',
-                    whiteSpace: 'pre-wrap', // Mantiene spazi e newline come nella textarea
+                    whiteSpace: 'pre-wrap',
                     wordWrap: 'break-word'
                   }}
                 >

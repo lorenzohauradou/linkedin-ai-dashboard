@@ -6,9 +6,10 @@ import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Textarea } from "../../ui/textarea"
 import { Badge } from "../../ui/badge"
-import { Edit3 } from "lucide-react"
+import { Edit3, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
+import { DeleteConfirmDialog } from "../../ui/delete-confirm-dialog"
 
 interface ProfessionalDNA {
     value_proposition: string | null
@@ -31,6 +32,8 @@ export function ProfessionalDNAModule({ onUpdate }: ProfessionalDNAModuleProps) 
     const [isEditing, setIsEditing] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
     // Form state
     const [valueProposition, setValueProposition] = useState('')
@@ -106,6 +109,36 @@ export function ProfessionalDNAModule({ onUpdate }: ProfessionalDNAModuleProps) 
         setIsEditing(false)
     }
 
+    const handleDelete = async () => {
+        setIsDeleting(true)
+        try {
+            const response = await fetch('/api/knowledge/dna', {
+                method: 'DELETE'
+            })
+
+            if (response.ok) {
+                setDna(null)
+                setValueProposition('')
+                setSelectedTones([])
+                setTargetAudience('')
+                setIsEditing(false)
+                setShowDeleteDialog(false)
+                toast.success("Professional DNA deleted successfully")
+                // Forza l'aggiornamento del pannello padre
+                setTimeout(() => {
+                    onUpdate?.()
+                }, 100)
+            } else {
+                throw new Error('Failed to delete')
+            }
+        } catch (error) {
+            console.error('Error deleting DNA:', error)
+            toast.error("Failed to delete professional DNA")
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
     const toggleTone = (tone: string) => {
         setSelectedTones(prev =>
             prev.includes(tone)
@@ -156,14 +189,25 @@ export function ProfessionalDNAModule({ onUpdate }: ProfessionalDNAModuleProps) 
                         </div>
 
                         {!isEditing && !isEmpty && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsEditing(true)}
-                                className="text-gray-600 hover:text-gray-900"
-                            >
-                                <Edit3 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setIsEditing(true)}
+                                    className="text-gray-600 hover:text-gray-900"
+                                >
+                                    <Edit3 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowDeleteDialog(true)}
+                                    disabled={isDeleting}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -317,6 +361,17 @@ export function ProfessionalDNAModule({ onUpdate }: ProfessionalDNAModuleProps) 
                     )}
                 </div>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmDialog
+                isOpen={showDeleteDialog}
+                onClose={() => setShowDeleteDialog(false)}
+                onConfirm={handleDelete}
+                title="Delete Professional DNA"
+                description="Are you sure you want to delete your Professional DNA? This will remove your value proposition, tone settings, and target audience."
+                itemName={dna?.value_proposition ? `${dna.value_proposition.substring(0, 50)}${dna.value_proposition.length > 50 ? '...' : ''}` : undefined}
+                isLoading={isDeleting}
+            />
         </div>
     )
 }
