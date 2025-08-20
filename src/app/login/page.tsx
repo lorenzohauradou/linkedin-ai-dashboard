@@ -16,9 +16,15 @@ function LoginContent() {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
-            router.push('/dashboard')
+            // Controlla se c'è un redirect parameter
+            const redirectTo = searchParams.get('redirect')
+            if (redirectTo && redirectTo.startsWith('/dashboard')) {
+                router.push(redirectTo)
+            } else {
+                router.push('/dashboard')
+            }
         }
-    }, [isAuthenticated, isLoading, router])
+    }, [isAuthenticated, isLoading, router, searchParams])
 
     const getErrorMessage = (error: string) => {
         switch (error) {
